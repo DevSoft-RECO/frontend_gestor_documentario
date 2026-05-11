@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestiones</title>
+  <style>
+    /* --- FONDO Y CONTENEDOR PRINCIPAL --- */
+    #loading-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* Degradado sutil para dar un look premium (Gris azulado muy claro a Blanco) */
+      background: radial-gradient(circle, #ffffff 0%, #f0f4f8 100%);
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    /* --- CAJA DEL LOADER --- */
+    .loader-box {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* --- ANILLO 1: AZUL MARINO (Base Estática/Lenta) --- */
+    .ring-navy {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 31, 63, 0.1);
+      /* Azul muy tenue de base */
+      border-top-color: #001f3f;
+      /* Azul Marino Fuerte */
+      border-bottom-color: #001f3f;
+      animation: spin-slow 3s linear infinite;
+      box-shadow: 0 0 10px rgba(0, 31, 63, 0.05);
+    }
+
+    /* --- ANILLO 2: VERDE (Energía/Velocidad) --- */
+    .ring-green {
+      position: absolute;
+      width: 85%;
+      /* Un poco más pequeño para crear capas */
+      height: 85%;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: #2ecc40;
+      /* Verde Corporativo */
+      border-right-color: #2ecc40;
+      /* EL EFECTO DESLUMBRANTE: Sombra de luz (Glow) */
+      filter: drop-shadow(0 0 4px rgba(46, 204, 64, 0.6));
+      animation: spin-fast 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    }
+
+    /* --- TEXTO CENTRAL --- */
+    .brand-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .brand-title {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 3px;
+      /* Espaciado estilo "Tech" */
+      color: #001f3f;
+      /* Azul Marino */
+      line-height: 1.1;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .brand-subtitle {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.65rem;
+      color: #2ecc40;
+      /* Verde */
+      letter-spacing: 4px;
+      margin-top: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    /* --- ANIMACIONES --- */
+
+    /* Giro constante y lento */
+    @keyframes spin-slow {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Giro rápido con efecto elástico */
+    @keyframes spin-fast {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Pequeño pálpito en el texto para dar vida */
+    .brand-content {
+      animation: breathe 3s infinite ease-in-out;
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="loading-wrapper">
+    <div class="loader-box">
+      <div class="ring-navy"></div>
+      <div class="ring-green"></div>
+
+      <div class="brand-content">
+        <div class="brand-title">YAMAN</div>
+        <div class="brand-title">KUTX</div>
+        <div class="brand-subtitle">SISTEMAS</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
