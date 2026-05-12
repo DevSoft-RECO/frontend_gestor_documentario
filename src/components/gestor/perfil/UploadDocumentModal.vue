@@ -27,6 +27,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const uploadForm = ref({
   categoria_id: '',
   subcategoria_id: '',
+  etiqueta: '',
+  numero_documento: '',
+  fecha_vencimiento: '',
   file: null as File | null
 })
 const isUploading = ref(false)
@@ -55,6 +58,15 @@ const uploadDocument = async () => {
   const formData = new FormData()
   formData.append('asociado_id', props.asociadoId)
   formData.append('subcategoria_id', uploadForm.value.subcategoria_id)
+  if (uploadForm.value.etiqueta) {
+    formData.append('etiqueta', uploadForm.value.etiqueta)
+  }
+  if (uploadForm.value.numero_documento) {
+    formData.append('numero_documento', uploadForm.value.numero_documento)
+  }
+  if (uploadForm.value.fecha_vencimiento) {
+    formData.append('fecha_vencimiento', uploadForm.value.fecha_vencimiento)
+  }
   formData.append('documento', uploadForm.value.file)
 
   try {
@@ -66,7 +78,7 @@ const uploadDocument = async () => {
     })
     
     if (res.ok) {
-      uploadForm.value = { categoria_id: '', subcategoria_id: '', file: null }
+      uploadForm.value = { categoria_id: '', subcategoria_id: '', etiqueta: '', numero_documento: '', fecha_vencimiento: '', file: null }
       emit('uploadSuccess')
     } else {
       const data = await res.json()
@@ -112,7 +124,22 @@ const uploadDocument = async () => {
       </div>
 
       <div v-if="uploadForm.subcategoria_id" class="form-group slide-down">
-        <label>3. Archivo PDF Inicial</label>
+        <label>3. Etiqueta del Primer Índice (Opcional)</label>
+        <input type="text" v-model="uploadForm.etiqueta" class="custom-select" placeholder="Ej. Documento Original" />
+      </div>
+
+      <div v-if="uploadForm.subcategoria_id" class="form-group slide-down">
+        <label>4. Número del Documento Físico (Opcional)</label>
+        <input type="text" v-model="uploadForm.numero_documento" class="custom-select" placeholder="Ej. Factura A-123" />
+      </div>
+
+      <div v-if="uploadForm.subcategoria_id" class="form-group slide-down">
+        <label>5. Fecha de Vencimiento (Opcional)</label>
+        <input type="date" v-model="uploadForm.fecha_vencimiento" class="custom-select" />
+      </div>
+
+      <div v-if="uploadForm.subcategoria_id" class="form-group slide-down">
+        <label>6. Archivo PDF Inicial</label>
         <div class="file-drop-area">
           <input type="file" accept="application/pdf" @change="handleFileSelect">
           <div class="file-msg">

@@ -7,6 +7,7 @@ interface IndicePagina {
   pagina_inicio: number
   tipo_movimiento: string
   etiqueta: string
+  numero_documento: string | null
   fecha_vencimiento: string | null
   fecha_operacion: string
   usuario_id: number
@@ -34,6 +35,7 @@ const actionType = ref<'insert' | 'replace' | 'delete'>('insert')
 const targetPage = ref<number | null>(null)
 const opForm = ref({
   etiqueta: '',
+  numero_documento: '',
   fecha_vencimiento: '',
   file: null as File | null
 })
@@ -88,6 +90,9 @@ const executeOperation = async () => {
   }
   if (actionType.value === 'insert') {
     formData.append('etiqueta', opForm.value.etiqueta)
+    if (opForm.value.numero_documento) {
+      formData.append('numero_documento', opForm.value.numero_documento)
+    }
     if (opForm.value.fecha_vencimiento) {
       formData.append('fecha_vencimiento', opForm.value.fecha_vencimiento)
     }
@@ -117,7 +122,7 @@ const executeOperation = async () => {
       else jumpToPage(1)
       
       // Reset form
-      opForm.value = { etiqueta: '', fecha_vencimiento: '', file: null }
+      opForm.value = { etiqueta: '', numero_documento: '', fecha_vencimiento: '', file: null }
       const fileInput = document.getElementById('opFileInput') as HTMLInputElement
       if (fileInput) fileInput.value = ''
     } else {
@@ -175,6 +180,11 @@ watch(() => props.documento, initViewer, { immediate: true })
           </div>
 
           <div v-if="actionType === 'insert'" class="form-group mt-2">
+            <label>Número de Documento (Opcional)</label>
+            <input type="text" v-model="opForm.numero_documento" class="custom-input" placeholder="Ej. Recibo 001" />
+          </div>
+
+          <div v-if="actionType === 'insert'" class="form-group mt-2">
             <label>Fecha de Vencimiento (Opcional)</label>
             <input type="date" v-model="opForm.fecha_vencimiento" class="custom-input" />
           </div>
@@ -197,7 +207,10 @@ watch(() => props.documento, initViewer, { immediate: true })
           <div v-for="indice in indicesActuales" :key="indice.id" class="indice-item" @click="jumpToPage(indice.pagina_inicio)">
             <div class="indice-info">
               <span class="indice-page">Pág. {{ indice.pagina_inicio }}</span>
-              <span class="indice-label">{{ indice.etiqueta }}</span>
+              <div class="indice-text">
+                <span class="indice-label">{{ indice.etiqueta }}</span>
+                <span v-if="indice.numero_documento" class="indice-numero"># {{ indice.numero_documento }}</span>
+              </div>
             </div>
             <div class="indice-meta">
               {{ indice.tipo_movimiento }} • {{ new Date(indice.fecha_operacion).toLocaleDateString() }}
@@ -260,8 +273,10 @@ watch(() => props.documento, initViewer, { immediate: true })
 .indice-item:hover { border-color: #0ea5e9; transform: translateX(5px); }
 .indice-info { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
 .indice-page { background: #0ea5e9; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; }
-.indice-label { color: #f8fafc; font-weight: 600; font-size: 0.95rem; line-height: 1.3; flex: 1; }
-.indice-meta { color: #64748b; font-size: 0.75rem; }
+.indice-text { display: flex; flex-direction: column; flex: 1; }
+.indice-label { color: #f8fafc; font-weight: 600; font-size: 0.95rem; line-height: 1.3; }
+.indice-numero { color: #94a3b8; font-size: 0.75rem; font-weight: 500; font-family: monospace; }
+.indice-meta { color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; }
 .indice-vencimiento { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; color: #f59e0b; font-size: 0.75rem; font-weight: 600; background: rgba(245, 158, 11, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; }
 .indice-vencimiento svg { width: 14px; }
 
