@@ -9,6 +9,8 @@ import CallbackView from '@/views/CallbackView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import UnauthorizedView from '@/views/UnauthorizedView.vue'
 import CategoriasView from '@/views/GestorDocumental/Categorias/CategoriasView.vue'
+import BuscadorView from '@/views/GestorDocumental/Asociados/BuscadorView.vue'
+import PerfilView from '@/views/GestorDocumental/Asociados/PerfilView.vue'
 
 const routes: RouteRecordRaw[] = [
     // 1. RUTAS PÚBLICAS
@@ -50,6 +52,22 @@ const routes: RouteRecordRaw[] = [
                 component: CategoriasView,
                 meta: {
                     title: 'Configuración de Categorías'
+                }
+            },
+            {
+                path: 'gestor/buscador',
+                name: 'gestor-buscador',
+                component: BuscadorView,
+                meta: {
+                    title: 'Buscador de Asociados'
+                }
+            },
+            {
+                path: 'gestor/asociados/:id',
+                name: 'gestor-perfil',
+                component: PerfilView,
+                meta: {
+                    title: 'Perfil del Asociado'
                 }
             }
         ]
