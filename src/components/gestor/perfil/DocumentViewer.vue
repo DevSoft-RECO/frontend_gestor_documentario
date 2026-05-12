@@ -150,7 +150,7 @@ watch(() => props.documento, initViewer, { immediate: true })
         
         <!-- OPERACIONES MANUALES -->
         <div class="manual-ops-card">
-          <h4>Gestión de Páginas (Quirúrgica)</h4>
+          <h4>Gestión de Páginas del Docuemnto</h4>
           <p class="help-text">Ingresa el número de página para alterar el PDF físico.</p>
           
           <div class="form-group row-group">
@@ -172,6 +172,11 @@ watch(() => props.documento, initViewer, { immediate: true })
           <div v-if="actionType === 'insert'" class="form-group mt-2">
             <label>Etiqueta del Separador (Opcional)</label>
             <input type="text" v-model="opForm.etiqueta" class="custom-input" placeholder="Ej. Actualización" />
+          </div>
+
+          <div v-if="actionType === 'insert'" class="form-group mt-2">
+            <label>Fecha de Vencimiento (Opcional)</label>
+            <input type="date" v-model="opForm.fecha_vencimiento" class="custom-input" />
           </div>
 
           <button @click="executeOperation" class="btn-execute mt-3" :disabled="isProcessing">
@@ -196,6 +201,10 @@ watch(() => props.documento, initViewer, { immediate: true })
             </div>
             <div class="indice-meta">
               {{ indice.tipo_movimiento }} • {{ new Date(indice.fecha_operacion).toLocaleDateString() }}
+            </div>
+            <div v-if="indice.fecha_vencimiento" class="indice-vencimiento">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Vence: {{ new Date(indice.fecha_vencimiento).toLocaleDateString() }}
             </div>
           </div>
         </div>
@@ -253,6 +262,8 @@ watch(() => props.documento, initViewer, { immediate: true })
 .indice-page { background: #0ea5e9; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; }
 .indice-label { color: #f8fafc; font-weight: 600; font-size: 0.95rem; line-height: 1.3; flex: 1; }
 .indice-meta { color: #64748b; font-size: 0.75rem; }
+.indice-vencimiento { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; color: #f59e0b; font-size: 0.75rem; font-weight: 600; background: rgba(245, 158, 11, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; }
+.indice-vencimiento svg { width: 14px; }
 
 /* PDF PANEL */
 .pdf-panel { flex: 1; display: flex; padding: 2rem; background: #0f172a; justify-content: center; }
