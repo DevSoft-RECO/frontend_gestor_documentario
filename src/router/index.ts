@@ -8,6 +8,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import CallbackView from '@/views/CallbackView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import UnauthorizedView from '@/views/UnauthorizedView.vue'
+import CategoriasView from '@/views/GestorDocumental/Categorias/CategoriasView.vue'
 
 const routes: RouteRecordRaw[] = [
     // 1. RUTAS PÚBLICAS
@@ -41,6 +42,14 @@ const routes: RouteRecordRaw[] = [
                 component: DashboardView,
                 meta: {
                     title: 'Gestiones'
+                }
+            },
+            {
+                path: 'gestor/categorias',
+                name: 'gestor-categorias',
+                component: CategoriasView,
+                meta: {
+                    title: 'Configuración de Categorías'
                 }
             }
         ]
