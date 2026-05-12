@@ -11,6 +11,7 @@ import UnauthorizedView from '@/views/UnauthorizedView.vue'
 import CategoriasView from '@/views/GestorDocumental/Categorias/CategoriasView.vue'
 import BuscadorView from '@/views/GestorDocumental/Asociados/BuscadorView.vue'
 import PerfilView from '@/views/GestorDocumental/Asociados/PerfilView.vue'
+import DocumentoBusquedaView from '@/views/GestorDocumental/Busqueda/DocumentoBusquedaView.vue'
 
 const routes: RouteRecordRaw[] = [
     // 1. RUTAS PÚBLICAS
@@ -68,6 +69,14 @@ const routes: RouteRecordRaw[] = [
                 component: PerfilView,
                 meta: {
                     title: 'Perfil del Asociado'
+                }
+            },
+            {
+                path: 'gestor/busqueda-documentos',
+                name: 'gestor-busqueda-docs',
+                component: DocumentoBusquedaView,
+                meta: {
+                    title: 'Buscador por Número Físico'
                 }
             }
         ]
