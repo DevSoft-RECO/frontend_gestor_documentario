@@ -64,60 +64,101 @@ const openDocument = (res: IndiceResultado) => {
 </script>
 
 <template>
-  <div class="search-view">
-    <div class="search-header">
-      <h1>Buscador de Documentos</h1>
-      <p>Localiza cualquier archivo físico mediante su número correlativo o etiqueta.</p>
-      
-      <div class="search-bar-container">
-        <input 
-          type="text" 
-          v-model="searchQuery" 
-          placeholder="Ingresa el número de documento o etiqueta..." 
-          @keyup.enter="handleSearch"
-          class="search-input"
-        />
-        <button @click="handleSearch" class="btn-search" :disabled="isSearching">
-          <span v-if="isSearching">Buscando...</span>
-          <span v-else>Buscar</span>
-        </button>
+  <div class="search-page">
+    <!-- Hero Section -->
+    <div class="hero-container" :class="{ 'full-screen': resultados.length === 0 && !isSearching }">
+      <div class="hero-content" :class="{ 'slide-down': resultados.length === 0 }">
+        <div class="hero-badge">Módulo de Consulta</div>
+        <h1>Buscador Inteligente de <span class="text-gradient">Documentos</span></h1>
+        <p>Localiza expedientes y archivos físicos con precisión quirúrgica mediante número correlativo o etiqueta.</p>
+        
+        <div class="search-wrapper">
+          <div class="search-glass" :class="{ 'search-active': isSearching }">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Ingresa # documento o etiqueta..." 
+              @keyup.enter="handleSearch"
+              class="glass-input"
+            />
+            <button @click="handleSearch" class="btn-action" :disabled="isSearching">
+              <span v-if="isSearching" class="loader"></span>
+              <span v-else>Consultar</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="results-container">
-      <div v-if="resultados.length === 0 && !isSearching && searchQuery" class="no-results">
-        No se encontraron documentos con ese número.
+    <!-- Results Section -->
+    <div class="main-content">
+      <div v-if="isSearching" class="loading-state">
+        <div class="pulse-ring"></div>
+        <p>Escaneando base de datos...</p>
       </div>
 
-      <div class="results-grid">
-        <div v-for="res in resultados" :key="res.id" class="result-card" @click="openDocument(res)">
-          <div class="card-badge">Pág. {{ res.pagina_inicio }}</div>
-          <div class="card-content">
-            <h3 class="card-title">{{ res.etiqueta }}</h3>
-            <div class="card-numero"># {{ res.numero_documento }}</div>
+      <div v-else-if="resultados.length === 0 && searchQuery && !isSearching" class="empty-state">
+        <div class="empty-icon">📂</div>
+        <h3>Sin coincidencias</h3>
+        <p>No encontramos documentos con ese criterio. Verifica el número e intenta de nuevo.</p>
+      </div>
+
+      <div v-else-if="resultados.length > 0" class="results-layout">
+        <div class="results-info">
+          <span>Se encontraron <strong>{{ resultados.length }}</strong> coincidencias</span>
+          <div class="results-divider"></div>
+        </div>
+
+        <div class="results-grid">
+          <div v-for="(res, index) in resultados" :key="res.id" 
+               class="modern-card fade-in" 
+               :style="{ animationDelay: `${index * 0.05}s` }"
+               @click="openDocument(res)">
             
-            <hr class="card-divider" />
-            
-            <div class="card-meta">
-              <div class="meta-item">
-                <span class="label">Asociado:</span>
-                <span class="value">{{ res.documento.asociado.nombre_completo }}</span>
+            <div class="card-header">
+              <div class="status-dot"></div>
+              <span class="page-indicator">Página {{ res.pagina_inicio }}</span>
+            </div>
+
+            <div class="card-body">
+              <h3 class="doc-title">{{ res.etiqueta }}</h3>
+              <div class="doc-id">
+                <span class="id-label">EXP-ID</span>
+                <span class="id-value">#{{ res.numero_documento }}</span>
               </div>
-              <div class="meta-item">
-                <span class="label">Categoría:</span>
-                <span class="value">{{ res.documento.subcategoria.categoria.nombre }} / {{ res.documento.subcategoria.nombre }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="label">{{ res.fecha_vencimiento ? 'Vence:' : 'Fecha:' }}</span>
-                <span class="value" :class="{ 'vencimiento-text': res.fecha_vencimiento }">
-                  {{ new Date(res.fecha_vencimiento || res.fecha_operacion).toLocaleDateString() }}
-                </span>
+
+              <div class="info-list">
+                <div class="info-item">
+                  <div class="info-icon">👤</div>
+                  <div class="info-text">
+                    <label>Asociado</label>
+                    <span>{{ res.documento.asociado.nombre_completo }}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-icon">🏷️</div>
+                  <div class="info-text">
+                    <label>Categoría</label>
+                    <span>{{ res.documento.subcategoria.categoria.nombre }} / {{ res.documento.subcategoria.nombre }}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-icon" :class="{ 'warn': res.fecha_vencimiento }">📅</div>
+                  <div class="info-text">
+                    <label>{{ res.fecha_vencimiento ? 'Vencimiento' : 'Fecha Operación' }}</label>
+                    <span :class="{ 'warning-text': res.fecha_vencimiento }">
+                      {{ new Date(res.fecha_vencimiento || res.fecha_operacion).toLocaleDateString() }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="card-footer">
-            <span>Hacer clic para abrir visor</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+
+            <div class="card-action">
+              <span>Visualizar Archivo</span>
+              <div class="arrow-icon">→</div>
+            </div>
           </div>
         </div>
       </div>
@@ -135,35 +176,352 @@ const openDocument = (res: IndiceResultado) => {
 </template>
 
 <style scoped>
-.search-view { padding: 2rem; max-width: 1200px; margin: 0 auto; font-family: 'Inter', sans-serif; min-height: 100vh; }
-.search-header { text-align: center; margin-bottom: 3rem; }
-.search-header h1 { color: #0f172a; font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-.search-header p { color: #64748b; font-size: 1.1rem; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-.search-bar-container { display: flex; max-width: 700px; margin: 2rem auto; gap: 1rem; background: white; padding: 0.5rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-.search-input { flex: 1; border: none; padding: 1rem 1.5rem; font-size: 1.1rem; outline: none; border-radius: 12px; }
-.btn-search { background: #0ea5e9; color: white; border: none; padding: 0 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-.btn-search:hover { background: #0284c7; transform: translateY(-2px); }
+.search-page {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #1e293b;
+  padding-bottom: 5rem;
+}
 
-.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
-.result-card { background: white; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; position: relative; display: flex; flex-direction: column; }
-.result-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); border-color: #0ea5e9; }
+/* Hero Design */
+.hero-container {
+  background: radial-gradient(circle at top right, #f1f5f9 0%, #ffffff 100%);
+  padding: 4rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
 
-.card-badge { position: absolute; top: 1rem; right: 1rem; background: #f0f9ff; color: #0ea5e9; font-weight: 800; font-size: 0.75rem; padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid #bae6fd; }
+.hero-container.full-screen {
+  min-height: 80vh;
+  justify-content: center;
+  padding-top: 0;
+}
 
-.card-content { padding: 1.5rem; flex: 1; }
-.card-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem; }
-.card-numero { font-family: monospace; color: #0ea5e9; font-weight: 600; font-size: 0.9rem; margin-bottom: 1rem; }
-.card-divider { border: none; border-top: 1px solid #f1f5f9; margin: 1rem 0; }
+.hero-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.5rem 1.25rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+  border: 1px solid #bae6fd;
+}
 
-.card-meta { display: flex; flex-direction: column; gap: 0.75rem; }
-.meta-item { display: flex; justify-content: space-between; font-size: 0.85rem; }
-.meta-item .label { color: #94a3b8; font-weight: 500; }
-.meta-item .value { color: #475569; font-weight: 600; text-align: right; }
-.vencimiento-text { color: #f59e0b !important; }
+.hero-container h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
 
-.card-footer { background: #f8fafc; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 0.85rem; font-weight: 600; border-top: 1px solid #f1f5f9; }
-.result-card:hover .card-footer { background: #f0f9ff; color: #0ea5e9; }
+.text-gradient {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-.no-results { text-align: center; color: #94a3b8; padding: 3rem; font-style: italic; }
+.hero-container p {
+  color: #64748b;
+  font-size: 1.15rem;
+  max-width: 600px;
+  margin: 0 auto 3rem;
+  line-height: 1.6;
+}
+
+/* Search Bar Design */
+.search-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.search-glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 0.75rem 1rem;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 1);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.search-glass:focus-within {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 60px rgba(14, 165, 233, 0.15);
+  border-color: #0ea5e9;
+}
+
+.search-icon { color: #94a3b8; }
+
+.glass-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: 500;
+  outline: none;
+  color: #1e293b;
+}
+
+.btn-action {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action:hover {
+  background: #0ea5e9;
+  transform: scale(1.02);
+}
+
+/* Results Section */
+.main-content {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.results-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.results-divider {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2rem;
+}
+
+/* Modern Card Design */
+.modern-card {
+  background: white;
+  border-radius: 28px;
+  padding: 2rem;
+  position: relative;
+  border: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.modern-card:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.06);
+  border-color: #0ea5e9;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.page-indicator {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
+}
+
+.doc-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.doc-id {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.id-label {
+  background: #0ea5e9;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.id-value {
+  color: #0ea5e9;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.info-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.info-icon {
+  font-size: 1.25rem;
+  background: #f8fafc;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.info-icon.warn { background: #fff7ed; }
+
+.info-text label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.info-text span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+  display: block;
+  line-height: 1.4;
+}
+
+.warning-text { color: #f59e0b !important; }
+
+.card-action {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0ea5e9;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.arrow-icon {
+  width: 32px;
+  height: 32px;
+  background: #f0f9ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.modern-card:hover .arrow-icon {
+  background: #0ea5e9;
+  color: white;
+  transform: translateX(5px);
+}
+
+/* Animations */
+.slide-down {
+  animation: slideDown 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out both;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Loading & Empty States */
+.loading-state, .empty-state {
+  text-align: center;
+  padding: 5rem 0;
+}
+
+.loading-state p { color: #64748b; font-weight: 600; margin-top: 1rem; }
+
+.pulse-ring {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #0ea5e9;
+  border-radius: 50%;
+  margin: 0 auto;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+.empty-state h3 { font-size: 1.5rem; font-weight: 800; color: #1e293b; }
+.empty-state p { color: #64748b; }
+
+@media (max-width: 768px) {
+  .results-grid { grid-template-columns: 1fr; }
+  .btn-action { padding: 1rem 1.5rem; }
+}
 </style>
