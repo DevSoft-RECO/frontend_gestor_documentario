@@ -204,11 +204,12 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
+import { useAuthStore } from '@/stores/auth'
 // import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
-// const authStore = useAuthStore()
+const authStore = useAuthStore()
 const openGroups = ref<string[]>([])
 
 // --- NUEVA FUNCIÓN PARA CERRAR EN MÓVIL ---
@@ -218,33 +219,24 @@ const handleItemClick = () => {
   }
 }
 
-
-
-// Helper para verificar roles administrativos
-// (Se usa dentro del computed para lógica dinámica)
-
 const menuItems = computed(() => {
-
-    /**
-     * --- EJEMPLO DE GRUPO DINÁMICO (COMENTADO) ---
-     * Este patrón asegura que el botón "Padre" del sidebar SOLO se muestre
-     * si el usuario tiene permiso para ver al menos uno de sus hijos.
-     */
-    /*
-    const ventasChildren = [
-        // Hijo 1: Requiere permiso 'ver_reportes_ventas'
-        ...(authStore.hasPermission('ver_reportes_ventas') ? [{
-            label: 'Reportes de Ventas',
-            route: '/admin/ventas/reportes'
+    // Definición dinámica de los hijos del Gestor Documental basados en permisos
+    const gestorChildren = [
+        ...(authStore.hasPermission('buscar_crear_asociados') ? [{
+            label: 'Buscador Asociados',
+            route: '/admin/gestor/buscador'
+        }] : []),
+        
+        ...(authStore.hasPermission('buscar_docuemntos') ? [{
+            label: 'Buscador Documentos',
+            route: '/admin/gestor/busqueda-documentos'
         }] : []),
 
-        // Hijo 2: Requiere Rol 'Gerente'
-        ...(authStore.hasRole('Gerente') ? [{
-            label: 'Configuración de Caja',
-            route: '/admin/ventas/config'
+        ...(authStore.hasRole('Super Admin') ? [{
+            label: 'Categorías',
+            route: '/admin/gestor/categorias'
         }] : [])
     ];
-    */
 
     const items = [
         {
@@ -255,40 +247,12 @@ const menuItems = computed(() => {
             show: true
         },
 
-        // --- EJEMPLO BASE FUNCIONAL CON SUBITEMS (Siempre visible) ---
-        // Útil para agrupar opciones sin depender de permisos
-        {
-            id: 'ejemplo-base-grupo',
-            label: 'Ejemplo Grupo',
-            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />',
-            show: true,
-            children: [
-                { label: 'Opción A', route: '/admin/dashboard#opcion-a' },
-                { label: 'Opción B', route: '/admin/dashboard#opcion-b' }
-            ]
-        },
-
-        /*
-        // --- CONTINUACIÓN EJEMPLO GRUPO DINÁMICO ---
-        {
-            id: 'modulo-ventas',
-            label: 'Módulo de Ventas',
-            iconSvg: '<path ... />', // Tu SVG aquí
-            // MAGIA AQUÍ: show depende de si `ventasChildren` tiene elementos
-            show: ventasChildren.length > 0,
-            children: ventasChildren
-        }
-        */
         {
             id: 'gestor-documental',
             label: 'Gestor Documental',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />',
-            show: true,
-            children: [
-                { label: 'Buscador Asociados', route: '/admin/gestor/buscador' },
-                { label: 'Buscador Documentos', route: '/admin/gestor/busqueda-documentos' },
-                { label: 'Categorías', route: '/admin/gestor/categorias' }
-            ]
+            show: gestorChildren.length > 0,
+            children: gestorChildren
         },
     ]
 

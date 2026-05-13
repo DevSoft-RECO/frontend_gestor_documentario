@@ -52,7 +52,8 @@ const routes: RouteRecordRaw[] = [
                 name: 'gestor-categorias',
                 component: CategoriasView,
                 meta: {
-                    title: 'Configuración de Categorías'
+                    title: 'Configuración de Categorías',
+                    role: 'Super Admin'
                 }
             },
             {
@@ -60,7 +61,8 @@ const routes: RouteRecordRaw[] = [
                 name: 'gestor-buscador',
                 component: BuscadorView,
                 meta: {
-                    title: 'Buscador de Asociados'
+                    title: 'Buscador de Asociados',
+                    permission: 'buscar_crear_asociados'
                 }
             },
             {
@@ -76,7 +78,8 @@ const routes: RouteRecordRaw[] = [
                 name: 'gestor-busqueda-docs',
                 component: DocumentoBusquedaView,
                 meta: {
-                    title: 'Buscador por Número Físico'
+                    title: 'Buscador por Número Físico',
+                    permission: 'buscar_docuemntos'
                 }
             }
         ]
@@ -125,10 +128,14 @@ router.beforeEach(async (to, _from, next) => {
 
         // Verificar permiso
         if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
-            const motherAppUrl = import.meta.env.VITE_MOTHER_APP_URL || 'http://localhost:5173'
             console.warn(`⛔ Acceso denegado: Falta permiso '${to.meta.permission}'.`)
-            window.location.href = `${motherAppUrl}/apps`
-            return next(false)
+            return next({ name: 'unauthorized' })
+        }
+
+        // Verificar Rol
+        if (to.meta.role && !authStore.hasRole(to.meta.role as string)) {
+            console.warn(`⛔ Acceso denegado: Falta rol '${to.meta.role}'.`)
+            return next({ name: 'unauthorized' })
         }
     }
 
