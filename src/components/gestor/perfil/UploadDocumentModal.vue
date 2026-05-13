@@ -278,4 +278,47 @@ const uploadDocument = async () => {
 .modal-body-scroll::-webkit-scrollbar-track { background: transparent; }
 .modal-body-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 .modal-body-scroll::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+/* --- COMPATIBILIDAD MODO OSCURO --- */
+:root.dark .glass-card {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+:root.dark .modal-header { border-color: #1e293b; }
+:root.dark .modal-header h2 { color: #f8fafc; }
+:root.dark .modal-desc { color: #94a3b8; }
+:root.dark .icon-circle { background: #1e293b; }
+:root.dark .btn-close { background: #1e293b; color: #94a3b8; }
+
+:root.dark .section-title::after { background: #1e293b; }
+:root.dark .form-group label { color: #cbd5e1; }
+
+:root.dark .custom-select {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+:root.dark .custom-select:focus { background: #0f172a; border-color: #0ea5e9; }
+
+:root.dark .file-drop-area {
+  background: #1e293b;
+  border-color: #334155;
+}
+:root.dark .file-drop-area:hover { border-color: #0ea5e9; background: rgba(14, 165, 233, 0.05); }
+:root.dark .file-msg { color: #94a3b8; }
+
+:root.dark .modal-actions {
+  background: #020617;
+  border-color: #1e293b;
+}
+:root.dark .btn-secondary {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+:root.dark .btn-secondary:hover { background: #334155; color: white; }
+
+:root.dark .modal-body-scroll::-webkit-scrollbar-thumb { background: #334155; }
 </style>
