@@ -55,7 +55,10 @@ const pagesContainer = ref<HTMLElement | null>(null)
 
 const loadIndices = async () => {
   try {
-    const res = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/indices`)
+    const token = sessionStorage.getItem('access_token')
+    const res = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/indices`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     if (res.ok) {
       const data = await res.json()
       indicesActuales.value = data.indices || []
@@ -78,8 +81,14 @@ const renderPDF = async () => {
   console.log("[PDF.js] Iniciando renderizado de:", props.documento.file_path)
   
   try {
+    const token = sessionStorage.getItem('access_token')
     const url = `${API_URL}${props.documento.file_path}?t=${new Date().getTime()}`
-    const loadingTask = pdfjsLib.getDocument(url)
+    
+    // PDF.js con Headers de Autorización
+    const loadingTask = pdfjsLib.getDocument({
+      url,
+      httpHeaders: { 'Authorization': `Bearer ${token}` }
+    })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
@@ -190,7 +199,7 @@ const executeOperation = async () => {
   }
 
   try {
-    const token = localStorage.getItem('token') || ''
+    const token = sessionStorage.getItem('access_token') || ''
     const res = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/${endpoint}`, {
       method,
       headers: { 'Authorization': `Bearer ${token}` },
@@ -218,10 +227,13 @@ const executeOperation = async () => {
 
 const downloadPDF = async () => {
   try {
+    const token = sessionStorage.getItem('access_token')
     const url = `${API_URL}${props.documento.file_path}`
     
     // Descargamos el archivo como blob para forzar la descarga directa
-    const res = await fetch(url)
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     const blob = await res.blob()
     const blobUrl = URL.createObjectURL(blob)
     
@@ -243,10 +255,13 @@ const downloadPDF = async () => {
 
 const printPDF = async () => {
   try {
+    const token = sessionStorage.getItem('access_token')
     const url = `${API_URL}${props.documento.file_path}`
     
     // 1. Descargamos el archivo como Blob para evitar errores de Cross-Origin (CORS)
-    const res = await fetch(url)
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     const blob = await res.blob()
     const blobUrl = URL.createObjectURL(blob)
     

@@ -40,7 +40,10 @@ const handleSearch = async () => {
   resultados.value = []
   
   try {
-    const res = await fetch(`${API_URL}/api/gestor/busqueda/documento/${searchQuery.value}`)
+    const token = sessionStorage.getItem('access_token')
+    const res = await fetch(`${API_URL}/api/gestor/busqueda/documento/${searchQuery.value}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     if (res.ok) {
       resultados.value = await res.json()
     }

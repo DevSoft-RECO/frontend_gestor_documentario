@@ -33,7 +33,10 @@ watch(searchQuery, async (newVal) => {
 
   isLoading.value = true
   try {
-    const res = await fetch(`${API_URL}/api/gestor/asociados/search?q=${newVal}`)
+    const token = sessionStorage.getItem('access_token')
+    const res = await fetch(`${API_URL}/api/gestor/asociados/search?q=${newVal}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     results.value = await res.json()
   } catch (e) {
     console.error(e)
@@ -48,9 +51,13 @@ const goToProfile = (id: number) => {
 
 const registerAsociado = async () => {
   try {
+    const token = sessionStorage.getItem('access_token')
     const res = await fetch(`${API_URL}/api/gestor/asociados`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(form.value)
     })
     const data = await res.json()

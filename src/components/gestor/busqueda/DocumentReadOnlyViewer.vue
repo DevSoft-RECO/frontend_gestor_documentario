@@ -44,7 +44,10 @@ const pagesContainer = ref<HTMLElement | null>(null)
 
 const loadIndices = async () => {
   try {
-    const res = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/indices`)
+    const token = sessionStorage.getItem('access_token')
+    const res = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/indices`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     if (res.ok) {
       const data = await res.json()
       indicesActuales.value = data.indices || []
@@ -61,8 +64,13 @@ const renderPDF = async () => {
   isRendering.value = true
   
   try {
+    const token = sessionStorage.getItem('access_token')
     const url = `${API_URL}${props.documento.file_path}?t=${new Date().getTime()}`
-    const loadingTask = pdfjsLib.getDocument(url)
+    
+    const loadingTask = pdfjsLib.getDocument({
+      url,
+      httpHeaders: { 'Authorization': `Bearer ${token}` }
+    })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
@@ -119,7 +127,10 @@ const jumpToPage = (pageNum: number) => {
 }
 
 const downloadPDF = async () => {
-  const res = await fetch(`${API_URL}${props.documento.file_path}`)
+  const token = sessionStorage.getItem('access_token')
+  const res = await fetch(`${API_URL}${props.documento.file_path}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
   const blob = await res.blob()
   const blobUrl = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -130,7 +141,10 @@ const downloadPDF = async () => {
 }
 
 const printPDF = async () => {
-  const res = await fetch(`${API_URL}${props.documento.file_path}`)
+  const token = sessionStorage.getItem('access_token')
+  const res = await fetch(`${API_URL}${props.documento.file_path}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
   const blob = await res.blob()
   const blobUrl = URL.createObjectURL(blob)
   const iframe = document.createElement('iframe')
