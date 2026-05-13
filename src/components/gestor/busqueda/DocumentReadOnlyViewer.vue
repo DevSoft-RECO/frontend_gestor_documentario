@@ -41,6 +41,7 @@ const isRendering = ref(false)
 // PDF.js State
 let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
 const pagesContainer = ref<HTMLElement | null>(null)
+const scrollContainer = ref<HTMLElement | null>(null)
 
 const loadIndices = async () => {
   try {
@@ -93,7 +94,6 @@ const renderPDF = async () => {
 
     setupIntersectionObserver()
     
-    // Si hay una página inicial, saltar a ella después de renderizar
     if (props.initialPage) {
       setTimeout(() => jumpToPage(props.initialPage!), 500)
     }
@@ -112,7 +112,7 @@ const setupIntersectionObserver = () => {
       }
     })
   }, {
-    root: pagesContainer.value,
+    root: scrollContainer.value,
     threshold: 0.5
   })
 
@@ -171,95 +171,131 @@ watch(zoomLevel, renderPDF)
 </script>
 
 <template>
-  <div class="viewer-overlay">
-    <div class="viewer-header">
-      <div class="header-titles">
-        <div class="title-with-badge">
-          <h3>{{ props.documento.subcategoria?.nombre }}</h3>
-          <span class="page-count-badge">{{ currentPage }} / {{ totalPaginas }} Páginas</span>
+  <div class="fixed inset-0 flex flex-col z-[9999] font-['Plus_Jakarta_Sans'] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <!-- Header Premium Ocean Glass -->
+    <header class="h-[72px] flex items-center justify-between px-8 sticky top-0 z-[110] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+      <div class="flex items-center gap-5">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 shadow-inner">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         </div>
-        <span class="doc-meta">Viendo expediente de {{ props.asociadoNombre }}</span>
+        <div>
+          <div class="flex items-center gap-3">
+            <h3 class="m-0 text-base font-extrabold tracking-tight">{{ props.documento.subcategoria?.nombre }}</h3>
+            <span class="bg-sky-500 text-white text-[0.65rem] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm shadow-sky-500/20">Modo Lectura</span>
+          </div>
+          <p class="m-0 text-[0.7rem] text-slate-500 dark:text-slate-400">Expediente: <span class="font-bold text-sky-600 dark:text-sky-400">{{ props.asociadoNombre }}</span></p>
+        </div>
       </div>
       
-      <div class="viewer-controls">
-        <div class="action-buttons">
-          <button @click="downloadPDF" class="btn-action">Descargar</button>
-          <button @click="printPDF" class="btn-action">Imprimir</button>
-        </div>
-        <div class="zoom-controls">
-          <button @click="zoomLevel -= 0.1">−</button>
-          <span class="zoom-text">{{ Math.round(zoomLevel * 100) }}%</span>
-          <button @click="zoomLevel += 0.1">+</button>
-        </div>
-        <button @click="emit('close')" class="btn-close-viewer">Cerrar Visor ×</button>
-      </div>
-    </div>
-    
-    <div class="viewer-body">
-      <div class="index-panel">
-        <h4 class="indices-title">Índices del Documento</h4>
-        <div v-for="indice in indicesActuales" :key="indice.id" 
-             :class="['indice-item', { active: currentPage >= indice.pagina_inicio }]" 
-             @click="jumpToPage(indice.pagina_inicio)">
-          <div class="indice-info">
-            <span class="indice-page">Pág. {{ indice.pagina_inicio }}</span>
-            <div class="indice-text">
-              <span class="indice-label">{{ indice.etiqueta }}</span>
-              <span v-if="indice.numero_documento" class="indice-numero"># {{ indice.numero_documento }}</span>
-            </div>
-          </div>
-          <div class="indice-meta">
-            {{ indice.tipo_movimiento }} • {{ new Date(indice.fecha_operacion).toLocaleDateString() }}
-          </div>
-        </div>
+      <div class="hidden lg:flex items-center gap-3 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <button @click="jumpToPage(currentPage - 1)" :disabled="currentPage <= 1" 
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 rounded-lg w-8 h-8 flex items-center justify-center transition-all hover:text-sky-600 dark:hover:text-sky-400 disabled:opacity-40">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="text-[0.7rem] font-extrabold min-w-[80px] text-center tracking-widest text-slate-700 dark:text-slate-200">{{ currentPage }} / {{ totalPaginas }}</span>
+        <button @click="jumpToPage(currentPage + 1)" :disabled="currentPage >= totalPaginas" 
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 rounded-lg w-8 h-8 flex items-center justify-center transition-all hover:text-sky-600 dark:hover:text-sky-400 disabled:opacity-40">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
 
-      <div class="pdf-panel">
-        <div v-if="isRendering" class="rendering-overlay">
-          <div class="spinner"></div>
-          <p>Cargando visor de seguridad...</p>
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex gap-2">
+          <button @click="downloadPDF" class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors flex items-center justify-center" title="Descargar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button @click="printPDF" class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors flex items-center justify-center" title="Imprimir">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          </button>
         </div>
-        <div ref="pagesContainer" class="pdf-scroll-container"></div>
+        <div class="bg-slate-900 text-white px-3 py-1.5 rounded-xl flex items-center gap-3 text-[0.7rem] font-bold border border-slate-700 shadow-lg">
+          <button @click="zoomLevel -= 0.1" :disabled="zoomLevel <= 0.5" class="hover:text-sky-400 disabled:opacity-30">−</button>
+          <span class="min-w-[40px] text-center">{{ Math.round(zoomLevel * 100) }}%</span>
+          <button @click="zoomLevel += 0.1" :disabled="zoomLevel >= 3" class="hover:text-sky-400 disabled:opacity-30">+</button>
+        </div>
+        <button @click="emit('close')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2">
+          <span>Salir</span>
+          <kbd class="opacity-50">×</kbd>
+        </button>
       </div>
+    </header>
+    
+    <div class="flex-1 flex overflow-hidden">
+      <!-- SIDEBAR DE ÍNDICES (SOLO LECTURA) -->
+      <aside class="w-[420px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shadow-xl z-[100]">
+        <div class="p-5 pb-3">
+          <h4 class="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 pl-1">Índices del Documento</h4>
+          <div class="space-y-2">
+            <div v-for="indice in indicesActuales" :key="indice.id" 
+                 @click="jumpToPage(indice.pagina_inicio)"
+                 :class="[
+                   'p-3 rounded-xl border cursor-pointer transition-all hover:translate-x-1 active:scale-[0.98]',
+                   currentPage >= indice.pagina_inicio ? 'bg-sky-50 dark:bg-sky-900/10 border-sky-300 dark:border-sky-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700'
+                 ]">
+              <div class="flex items-center gap-4">
+                <span class="text-[0.6rem] font-black text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/30 px-2 py-1 rounded-md min-w-[50px] text-center">Pág {{ indice.pagina_inicio }}</span>
+                
+                <div class="flex-1 min-w-0 flex items-center justify-between gap-3">
+                  <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate flex-1">{{ indice.etiqueta }}</p>
+                  
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span v-if="indice.numero_documento" class="text-[0.6rem] font-mono text-slate-400 dark:text-slate-500">#{{ indice.numero_documento }}</span>
+                    <span v-if="indice.fecha_vencimiento" class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" title="Tiene vencimiento"></span>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-if="indice.fecha_vencimiento" class="mt-2 pl-16 flex items-center gap-2 text-[0.6rem] text-amber-600 dark:text-amber-400 font-bold italic">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Vence el {{ new Date(indice.fecha_vencimiento).toLocaleDateString() }}
+              </div>
+            </div>
+            
+            <div v-if="indicesActuales.length === 0" class="py-20 text-center opacity-30 flex flex-col items-center gap-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <p class="text-[0.7rem] font-bold">Sin marcas registradas</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- VISOR PDF -->
+      <main ref="scrollContainer" class="flex-1 bg-slate-200 dark:bg-slate-950 overflow-y-auto flex flex-col items-center py-12 relative scroll-smooth bg-gradient-to-br from-slate-200/50 to-slate-300/50 dark:from-slate-950 dark:to-slate-900 custom-scrollbar">
+        <div v-if="isRendering" class="absolute inset-0 z-50 bg-slate-100/60 dark:bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div class="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+          <p class="text-[0.65rem] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.3em]">Visor de Seguridad Activo</p>
+        </div>
+        <div ref="pagesContainer" class="flex flex-col items-center gap-10 drop-shadow-2xl"></div>
+      </main>
     </div>
   </div>
 </template>
 
 <style scoped>
-.viewer-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.98); z-index: 9999; display: flex; flex-direction: column; color: white; font-family: 'Inter', sans-serif; }
-.viewer-header { padding: 1rem 2rem; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
-.header-titles h3 { color: white; margin: 0; font-weight: 600; }
-.title-with-badge { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.25rem; }
-.page-count-badge { background: #0ea5e9; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 4px; }
-.doc-meta { color: #94a3b8; font-size: 0.85rem; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-.viewer-controls { display: flex; align-items: center; gap: 1.5rem; }
-.action-buttons { display: flex; gap: 0.5rem; }
-.btn-action { background: rgba(255,255,255,0.05); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 0.85rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
-.btn-action:hover { background: rgba(255,255,255,0.1); color: white; }
+:deep(.pdf-page-wrapper) {
+  background: white;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
 
-.zoom-controls { display: flex; align-items: center; gap: 1rem; background: #1e293b; padding: 0.25rem 0.75rem; border-radius: 8px; border: 1px solid #334155; }
-.zoom-controls button { background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; }
-.zoom-text { font-size: 0.85rem; min-width: 45px; text-align: center; }
-.btn-close-viewer { background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+}
+:root.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
 
-.viewer-body { flex: 1; display: flex; overflow: hidden; }
-.index-panel { width: 320px; background: #1e293b; border-right: 1px solid #334155; padding: 1.5rem; overflow-y: auto; }
-.indices-title { color: #cbd5e1; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 1.5rem; }
-.indice-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; cursor: pointer; opacity: 0.7; transition: 0.2s; }
-.indice-item.active { border-color: #0ea5e9; opacity: 1; background: rgba(14, 165, 233, 0.05); }
-
-.indice-info { display: flex; gap: 0.75rem; margin-bottom: 0.5rem; }
-.indice-page { background: #334155; color: #cbd5e1; font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; }
-.indice-item.active .indice-page { background: #0ea5e9; color: white; }
-.indice-label { color: #f8fafc; font-weight: 600; font-size: 0.95rem; }
-.indice-numero { color: #94a3b8; font-size: 0.75rem; display: block; font-family: monospace; }
-.indice-meta { color: #64748b; font-size: 0.75rem; }
-
-.pdf-panel { flex: 1; background: #020617; position: relative; }
-.pdf-scroll-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 2rem; gap: 2rem; }
-.pdf-page-wrapper { background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-.rendering-overlay { position: absolute; inset: 0; background: rgba(15,23,42,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
-.spinner { width: 40px; height: 40px; border: 4px solid #1e293b; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 768px) {
+  .viewer-sidebar { display: none; }
+}
 </style>
