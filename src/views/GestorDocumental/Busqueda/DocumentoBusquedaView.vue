@@ -9,6 +9,7 @@ interface IndiceResultado {
   etiqueta: string
   numero_documento: string
   fecha_operacion: string
+  fecha_vencimiento: string | null
   documento: {
     id: number
     file_path: string
@@ -107,8 +108,10 @@ const openDocument = (res: IndiceResultado) => {
                 <span class="value">{{ res.documento.subcategoria.categoria.nombre }} / {{ res.documento.subcategoria.nombre }}</span>
               </div>
               <div class="meta-item">
-                <span class="label">Fecha:</span>
-                <span class="value">{{ new Date(res.fecha_operacion).toLocaleDateString() }}</span>
+                <span class="label">{{ res.fecha_vencimiento ? 'Vence:' : 'Fecha:' }}</span>
+                <span class="value" :class="{ 'vencimiento-text': res.fecha_vencimiento }">
+                  {{ new Date(res.fecha_vencimiento || res.fecha_operacion).toLocaleDateString() }}
+                </span>
               </div>
             </div>
           </div>
@@ -157,6 +160,7 @@ const openDocument = (res: IndiceResultado) => {
 .meta-item { display: flex; justify-content: space-between; font-size: 0.85rem; }
 .meta-item .label { color: #94a3b8; font-weight: 500; }
 .meta-item .value { color: #475569; font-weight: 600; text-align: right; }
+.vencimiento-text { color: #f59e0b !important; }
 
 .card-footer { background: #f8fafc; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 0.85rem; font-weight: 600; border-top: 1px solid #f1f5f9; }
 .result-card:hover .card-footer { background: #f0f9ff; color: #0ea5e9; }
