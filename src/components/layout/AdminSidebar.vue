@@ -205,7 +205,6 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useAuthStore } from '@/stores/auth'
-// import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
@@ -220,24 +219,6 @@ const handleItemClick = () => {
 }
 
 const menuItems = computed(() => {
-    // Definición dinámica de los hijos del Gestor Documental basados en permisos
-    const gestorChildren = [
-        ...(authStore.hasPermission('buscar_crear_asociados') ? [{
-            label: 'Buscador Asociados',
-            route: '/admin/gestor/buscador'
-        }] : []),
-        
-        ...(authStore.hasPermission('buscar_docuemntos') ? [{
-            label: 'Buscador Documentos',
-            route: '/admin/gestor/busqueda-documentos'
-        }] : []),
-
-        ...(authStore.hasRole('Super Admin') ? [{
-            label: 'Categorías',
-            route: '/admin/gestor/categorias'
-        }] : [])
-    ];
-
     const items = [
         {
             id: 'home',
@@ -246,18 +227,32 @@ const menuItems = computed(() => {
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2 7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2v10a1 1 0 01-1 1h-3m-4 0h4" />',
             show: true
         },
-
         {
-            id: 'gestor-documental',
-            label: 'Gestor Documental',
-            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />',
-            show: gestorChildren.length > 0,
-            children: gestorChildren
+            id: 'buscador-asociados',
+            label: 'Buscador Asociados',
+            route: '/admin/gestor/buscador',
+            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />',
+            show: authStore.hasPermission('buscar_crear_asociados')
+        },
+        {
+            id: 'buscador-documentos',
+            label: 'Buscador Documentos',
+            route: '/admin/gestor/busqueda-documentos',
+            iconSvg: '<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="8" y1="11" x2="14" y2="11" /><line x1="11" y1="8" x2="11" y2="14" />',
+            show: authStore.hasPermission('buscar_docuemntos')
+        },
+        {
+            id: 'categorias',
+            label: 'Categorías',
+            route: '/admin/gestor/categorias',
+            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" />',
+            show: authStore.hasRole('Super Admin')
         },
     ]
 
     return items.filter(item => item.show)
 })
+
 
 const isActive = (path: string) => route.path === path
 
