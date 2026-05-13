@@ -41,7 +41,7 @@
     >
       <template v-for="item in menuItems" :key="item.id">
 
-        <div v-if="!item.children" class="relative group">
+        <div class="relative group">
             <RouterLink
             :to="item.route"
             @click="handleItemClick"
@@ -73,6 +73,15 @@
             </div>
         </div>
 
+        <!--
+        ============================================================
+        PLANTILLA BASE: GRUPO CON SUBITEMS (ACORDEÓN + POPOVER)
+        ============================================================
+        Para activar este bloque en el futuro:
+        1. Agrega 'children' al item del menú en menuItems
+        2. Usa v-if="!item.children" en el bloque individual de arriba
+        3. Cambia este comentario por v-else
+
         <div v-else class="relative group">
             <button
                 @click="handleGroupClick(item.id)"
@@ -90,98 +99,44 @@
                     </span>
                     <span v-if="!layoutStore.isCollapsed" class="ml-3 font-medium text-sm truncate">{{ item.label }}</span>
                 </div>
-
-                <svg
-                    v-if="!layoutStore.isCollapsed"
-                    class="w-4 h-4 transition-transform duration-300"
-                    :class="openGroups.includes(item.id) ? 'text-verde-cope rotate-180' : 'text-gray-400'"
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                >
+                <svg v-if="!layoutStore.isCollapsed" class="w-4 h-4 transition-transform duration-300"
+                     :class="openGroups.includes(item.id) ? 'text-verde-cope rotate-180' : 'text-gray-400'"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
 
-            <!-- POP-OVER FLOTANTE (SOLO CUANDO COLAPSADO) -->
-            <div
-                v-if="layoutStore.isCollapsed"
-                class="absolute left-full top-0 ml-4 w-64
-                       bg-azul-cope dark:bg-gray-800
-                       border-l-4 border-verde-cope
-                       rounded-xl shadow-2xl
-                       opacity-0 invisible
-                       group-hover:opacity-100 group-hover:visible
-                       transition-all duration-300 ease-out
-                       origin-top-left
-                       group-hover:scale-100 scale-95
-                       group-hover:translate-x-1
-                       z-50"
-            >
-                 <div class="px-3 py-2 text-xs font-semibold text-verde-cope uppercase tracking-wider border-b border-white/10 dark:border-gray-700 mb-1">
+            <div v-if="layoutStore.isCollapsed"
+                 class="absolute left-full top-0 ml-4 w-64 bg-azul-cope dark:bg-gray-800 border-l-4 border-verde-cope rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out origin-top-left group-hover:scale-100 scale-95 group-hover:translate-x-1 z-50">
+                <div class="px-3 py-2 text-xs font-semibold text-verde-cope uppercase tracking-wider border-b border-white/10 dark:border-gray-700 mb-1">
                     {{ item.label }}
-                 </div>
-
-                 <RouterLink
-                  v-for="child in item.children"
-                  :key="child.route"
-                  :to="child.route"
-                  @click="handleItemClick"
-                  class="block px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
-                  :class="isActive(child.route)
-                    ? 'bg-white/10 text-white font-medium shadow-sm'
-                    : 'text-gray-300 hover:bg-white/5 hover:text-white'"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="isActive(child.route) ? 'bg-verde-cope' : 'bg-gray-400'"></span>
-                  {{ child.label }}
+                </div>
+                <RouterLink v-for="child in item.children" :key="child.route" :to="child.route" @click="handleItemClick"
+                    class="block px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    :class="isActive(child.route) ? 'bg-white/10 text-white font-medium shadow-sm' : 'text-gray-300 hover:bg-white/5 hover:text-white'">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="isActive(child.route) ? 'bg-verde-cope' : 'bg-gray-400'"></span>
+                    {{ child.label }}
                 </RouterLink>
-
-                 <!-- Colita / Flecha apuntando al botón padre (Verde para efecto 'llave' { ) -->
-                 <div
-                   class="absolute left-0 top-5 -translate-x-1/2
-                          w-3 h-3 bg-verde-cope
-                          border-l border-b border-white/10
-                          rotate-45"
-                 ></div>
+                <div class="absolute left-0 top-5 -translate-x-1/2 w-3 h-3 bg-verde-cope border-l border-b border-white/10 rotate-45"></div>
             </div>
 
-            <!-- ACORDEÓN EXPANDIDO (SOLO CUANDO ESTÁ ABIERTO) -->
-            <transition
-                enter-active-class="transition-all duration-300 ease-out"
-                enter-from-class="opacity-0 -translate-y-2"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition-all duration-200 ease-in"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-2"
-            >
-                <div
-                    v-if="openGroups.includes(item.id) && !layoutStore.isCollapsed"
-                    class="mt-2 ml-3 space-y-1 relative"
-                >
-
-
-                    <RouterLink
-                        v-for="child in item.children"
-                        :key="child.route"
-                        :to="child.route"
-                        @click="handleItemClick"
+            <transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
+                        leave-active-class="transition-all duration-200 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
+                <div v-if="openGroups.includes(item.id) && !layoutStore.isCollapsed" class="mt-2 ml-3 space-y-1 relative">
+                    <RouterLink v-for="child in item.children" :key="child.route" :to="child.route" @click="handleItemClick"
                         class="relative group/child flex items-center gap-3 px-3 py-2 rounded-r-lg rounded-bl-lg ml-2 text-sm transition-all duration-200"
-                        :class="isActive(child.route)
-                            ? 'bg-verde-cope/10 text-verde-cope font-bold translate-x-1'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5 hover:translate-x-1'"
-                    >
-                         <!-- Indicador circular animado -->
-                         <span
-                            class="w-1.5 h-1.5 rounded-full transition-all duration-300 ring-2"
-                            :class="isActive(child.route)
-                                ? 'bg-verde-cope ring-verde-cope/30 scale-110'
-                                : 'bg-gray-600 ring-transparent group-hover/child:bg-gray-300'"
-                         ></span>
-
-                         {{ child.label }}
+                        :class="isActive(child.route) ? 'bg-verde-cope/10 text-verde-cope font-bold translate-x-1' : 'text-gray-400 hover:text-white hover:bg-white/5 hover:translate-x-1'">
+                        <span class="w-1.5 h-1.5 rounded-full transition-all duration-300 ring-2"
+                              :class="isActive(child.route) ? 'bg-verde-cope ring-verde-cope/30 scale-110' : 'bg-gray-600 ring-transparent group-hover/child:bg-gray-300'"></span>
+                        {{ child.label }}
                     </RouterLink>
                 </div>
             </transition>
         </div>
+        -->
+
       </template>
+
     </nav>
 
     <div class="p-4 mt-auto border-t border-white/10 dark:border-gray-800 shrink-0">
