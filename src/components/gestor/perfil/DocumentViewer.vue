@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
@@ -50,6 +50,22 @@ const opForm = ref({
   file: null as File | null
 })
 const isProcessing = ref(false)
+
+// Gestión de permisos para edición
+const availableActions = computed(() => {
+  const actions = []
+  if (authStore.hasPermission('insertar_hoja')) actions.push('insert')
+  if (authStore.hasPermission('reemplazar_hoja')) actions.push('replace')
+  if (authStore.hasPermission('eliminar_hoja')) actions.push('delete')
+  return actions as ('insert' | 'replace' | 'delete')[]
+})
+
+// Ajustar el tipo de acción inicial según permisos
+watch(availableActions, (newActions) => {
+  if (newActions.length > 0 && !newActions.includes(actionType.value)) {
+    actionType.value = newActions[0]
+  }
+}, { immediate: true })
 
 // PDF.js State
 let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
@@ -360,7 +376,7 @@ watch(zoomLevel, () => {
 
         <div class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           <!-- SECCIÓN DE OPERACIONES -->
-          <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
+          <div v-if="availableActions.length > 0" class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
             <div class="p-4 bg-slate-100 dark:bg-slate-900/80 flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-300">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
               <span>Edición Quirúrgica</span>
@@ -377,7 +393,7 @@ watch(zoomLevel, () => {
               </div>
 
               <div class="flex bg-slate-200 dark:bg-slate-950 p-1 rounded-xl gap-1">
-                <button v-for="type in (['insert', 'replace', 'delete'] as const)" :key="type"
+                <button v-for="type in availableActions" :key="type"
                         @click="actionType = type"
                         :class="[
                           'flex-1 py-2 text-[0.65rem] font-bold rounded-lg transition-all capitalize',
