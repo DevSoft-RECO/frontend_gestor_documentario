@@ -73,250 +73,529 @@ const registerAsociado = async () => {
 </script>
 
 <template>
-  <div class="search-container">
-    <div class="search-box">
-      <div class="logo-section">
-        <svg xmlns="http://www.w3.org/2000/svg" class="logo-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <h1>Buscador de Asociados</h1>
-        <p>Busca por Nombre, DPI o Código de Cliente</p>
-      </div>
+  <div class="search-page">
+    <!-- Hero & Search Section -->
+    <div class="hero-section" :class="{ 'hero-min': results.length > 0 || searchQuery.length >= 3 }">
+      <div class="hero-content slide-down">
+        <div class="badge-premium">Gestión de Expedientes</div>
+        <h1>Directorio de <span class="text-highlight">Asociados</span></h1>
+        <p>Busca por Nombre, DPI o Código para acceder al historial documental completo.</p>
 
-      <div class="input-wrapper" :class="{ 'has-results': results.length > 0 }">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Escribe para buscar..." 
-          autofocus
-        >
-        <div v-if="isLoading" class="loader-inline"></div>
-      </div>
-
-      <!-- Resultados -->
-      <Transition name="slide-up">
-        <div v-if="results.length > 0" class="results-list glass-card">
-          <div 
-            v-for="asoc in results" 
-            :key="asoc.id" 
-            class="result-item"
-            @click="goToProfile(asoc.id)"
-          >
-            <div class="asoc-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-            </div>
-            <div class="asoc-info">
-              <span class="asoc-name">{{ asoc.nombre_completo }}</span>
-              <span class="asoc-meta">DPI: {{ asoc.dpi }} | Código: {{ asoc.codigo_cliente || 'N/A' }}</span>
-            </div>
-            <svg class="chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        <div class="search-container">
+          <div class="search-glass" :class="{ 'is-loading': isLoading }">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Ej. Juan Pérez o 2540..." 
+              autofocus
+              class="glass-input"
+            >
+            <div v-if="isLoading" class="loader-circle"></div>
           </div>
-        </div>
-      </Transition>
 
-      <!-- No encontrado -->
-      <div v-if="searchQuery.length >= 3 && results.length === 0 && !isLoading" class="not-found">
-        <p>No encontramos ningún asociado con esa información.</p>
-        <button @click="showModal = true" class="btn-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-          Registrar como Nuevo
-        </button>
+          <!-- Dropdown de Resultados -->
+          <Transition name="fade-scale">
+            <div v-if="results.length > 0" class="results-dropdown glass-panel">
+              <div class="dropdown-header">Resultados Encontrados ({{ results.length }})</div>
+              <div 
+                v-for="(asoc, index) in results" 
+                :key="asoc.id" 
+                class="dropdown-item"
+                :style="{ animationDelay: `${index * 0.05}s` }"
+                @click="goToProfile(asoc.id)"
+              >
+                <div class="asoc-avatar">{{ asoc.nombre_completo.charAt(0) }}</div>
+                <div class="asoc-details">
+                  <span class="asoc-name">{{ asoc.nombre_completo }}</span>
+                  <span class="asoc-meta">
+                    <span class="meta-tag">DPI: {{ asoc.dpi }}</span>
+                    <span class="meta-tag">COD: {{ asoc.codigo_cliente || 'N/A' }}</span>
+                  </span>
+                </div>
+                <div class="asoc-arrow">→</div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- No Encontrado -->
+          <Transition name="fade">
+            <div v-if="searchQuery.length >= 3 && results.length === 0 && !isLoading" class="not-found-card">
+              <div class="not-found-content">
+                <div class="empty-anim">🔍</div>
+                <h3>Sin coincidencias</h3>
+                <p>No encontramos a este asociado en nuestra base de datos.</p>
+                <button @click="showModal = true" class="btn-premium">
+                  <span>+</span> Registrar Nuevo Asociado
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
       </div>
     </div>
 
     <!-- Modal Registro -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="glass-card modal-content slide-up">
-        <h2>Registro Rápido de Asociado</h2>
-        <p>Ingresa los datos básicos para crear el expediente.</p>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Nombre Completo</label>
-            <input v-model="form.nombre_completo" type="text" placeholder="Ej. Pedro Picapiedra">
+    <Transition name="blur">
+      <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+        <div class="glass-modal slide-up">
+          <div class="modal-header">
+            <div>
+              <h2>Nuevo Registro</h2>
+              <p>Completa el perfil básico para iniciar el expediente.</p>
+            </div>
+            <button @click="showModal = false" class="btn-close">×</button>
           </div>
-          <div class="form-group">
-            <label>DPI (CUI)</label>
-            <input v-model="form.dpi" type="text" placeholder="13 dígitos">
+          
+          <div class="modal-body">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Nombre Completo</label>
+                <div class="input-with-icon">
+                  <i>👤</i>
+                  <input v-model="form.nombre_completo" type="text" placeholder="Nombre completo del asociado">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Documento DPI (CUI)</label>
+                <div class="input-with-icon">
+                  <i>🆔</i>
+                  <input v-model="form.dpi" type="text" placeholder="13 dígitos">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Código Interno</label>
+                <div class="input-with-icon">
+                  <i>🔢</i>
+                  <input v-model="form.codigo_cliente" type="text" placeholder="Ej. 1025-X">
+                </div>
+              </div>
+              <div class="form-group full">
+                <label>Dirección Domiciliar</label>
+                <div class="input-with-icon">
+                  <i>📍</i>
+                  <input v-model="form.direccion" type="text" placeholder="Dirección completa">
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Código de Cliente (Opcional)</label>
-            <input v-model="form.codigo_cliente" type="text" placeholder="Ej. 10025-1">
-          </div>
-          <div class="form-group full">
-            <label>Dirección</label>
-            <input v-model="form.direccion" type="text" placeholder="Dirección completa">
-          </div>
-        </div>
 
-        <div class="modal-actions">
-          <button @click="showModal = false" class="btn-secondary">Cancelar</button>
-          <button @click="registerAsociado" class="btn-primary">Crear Perfil y Continuar</button>
+          <div class="modal-footer">
+            <button @click="showModal = false" class="btn-ghost">Descartar</button>
+            <button @click="registerAsociado" class="btn-submit">
+              Generar Expediente
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped>
-.search-container {
-  min-height: 100vh;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+.search-page {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  flex: 1;
   display: flex;
-  justify-content: center;
-  padding-top: 10vh;
-  background: radial-gradient(circle at top right, #f0f9ff, #e2e8f0);
-  font-family: 'Inter', sans-serif;
+  flex-direction: column;
+  background-color: #f8fafc;
+  overflow: hidden;
+  padding-bottom: 5rem;
 }
 
-.search-box {
-  width: 100%;
-  max-width: 700px;
+/* Hero Section */
+.hero-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0 2rem;
+  background: radial-gradient(circle at top right, #f1f5f9 0%, #ffffff 100%);
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+}
+
+.hero-section.hero-min {
+  flex: 0 0 25vh;
+  min-height: 25vh;
+  align-items: flex-start;
+  padding-top: 4rem;
+}
+
+.hero-content {
+  width: 100%;
+  max-width: 800px;
   text-align: center;
 }
 
-.logo-section {
-  margin-bottom: 3rem;
+.badge-premium {
+  display: inline-block;
+  background: #0ea5e9;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.2);
 }
 
-.logo-icon {
-  width: 60px;
-  height: 60px;
-  color: #0ea5e9;
+.hero-content h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1;
   margin-bottom: 1rem;
 }
 
-.logo-section h1 { font-size: 2.2rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
-.logo-section p { color: #64748b; font-size: 1.1rem; }
+.text-highlight {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-.input-wrapper {
+.hero-content p {
+  color: #64748b;
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+}
+
+/* Search Bar Design */
+.search-container {
   position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.search-glass {
   background: white;
-  border-radius: 9999px;
-  padding: 0.5rem 1.5rem;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
   display: flex;
   align-items: center;
-  transition: 0.3s;
+  gap: 1.25rem;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.08);
+  border: 1px solid #e2e8f0;
+  transition: all 0.4s;
 }
 
-.input-wrapper:focus-within {
-  box-shadow: 0 15px 35px rgba(14, 165, 233, 0.1);
+.search-glass:focus-within {
+  transform: translateY(-5px);
   border-color: #0ea5e9;
-  transform: translateY(-2px);
+  box-shadow: 0 35px 70px rgba(14, 165, 233, 0.12);
 }
 
-.input-wrapper.has-results {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
+.search-icon { color: #94a3b8; width: 28px; }
 
-.input-wrapper input {
-  width: 100%;
-  padding: 1rem;
-  font-size: 1.25rem;
-  border: none;
-  outline: none;
+.glass-input {
+  flex: 1;
   background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 600;
   color: #1e293b;
+  outline: none;
 }
 
-.loader-inline {
-  width: 24px; height: 24px;
+.loader-circle {
+  width: 24px;
+  height: 24px;
   border: 3px solid #f3f3f3;
   border-top: 3px solid #0ea5e9;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-left: 1rem;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.results-list {
-  background: white;
-  border-bottom-left-radius: 24px;
-  border-bottom-right-radius: 24px;
-  margin-top: -1px;
-  border: 1px solid #e2e8f0;
-  border-top: 1px solid #f1f5f9;
-  text-align: left;
+/* Dropdown Results */
+.results-dropdown {
+  position: absolute;
+  top: calc(100% + 1rem);
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 28px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.1);
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  z-index: 50;
+  text-align: left;
 }
 
-.result-item {
-  display: flex;
-  align-items: center;
+.dropdown-header {
   padding: 1.25rem 2rem;
-  cursor: pointer;
-  transition: 0.2s;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
   border-bottom: 1px solid #f8fafc;
 }
 
-.result-item:last-child { border-bottom: none; }
-.result-item:hover { background: #f0f9ff; padding-left: 2.5rem; }
-
-.asoc-icon { width: 40px; height: 40px; background: #e0f2fe; color: #0369a1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 1.25rem; }
-.asoc-icon svg { width: 24px; }
-
-.asoc-info { flex: 1; display: flex; flex-direction: column; }
-.asoc-name { font-weight: 700; color: #1e293b; font-size: 1.1rem; }
-.asoc-meta { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
-
-.chevron { width: 20px; color: #cbd5e1; }
-.result-item:hover .chevron { color: #0ea5e9; transform: translateX(5px); }
-
-.not-found { margin-top: 3rem; animation: fadeIn 0.5s ease; }
-.not-found p { color: #64748b; margin-bottom: 1.5rem; }
-
-.btn-primary {
-  background: #0ea5e9;
-  color: white;
-  border: none;
-  padding: 0.85rem 1.75rem;
-  border-radius: 9999px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
+.dropdown-item {
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
-  transition: 0.2s;
+  padding: 1.5rem 2rem;
+  gap: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  animation: slideIn 0.4s ease-out both;
 }
 
-.btn-primary:hover { background: #0284c7; transform: scale(1.05); }
-.btn-primary svg { width: 20px; }
+.dropdown-item:hover {
+  background: #f0f9ff;
+  padding-left: 2.5rem;
+}
 
-/* MODAL */
+.asoc-avatar {
+  width: 48px;
+  height: 48px;
+  background: #0ea5e9;
+  color: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.asoc-details { flex: 1; display: flex; flex-direction: column; }
+
+.asoc-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.asoc-meta { display: flex; gap: 0.75rem; }
+
+.meta-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.asoc-arrow {
+  color: #cbd5e1;
+  font-size: 1.5rem;
+  transition: 0.3s;
+}
+
+.dropdown-item:hover .asoc-arrow {
+  color: #0ea5e9;
+  transform: translateX(5px);
+}
+
+/* Not Found Card */
+.not-found-card {
+  margin-top: 3rem;
+}
+
+.not-found-content {
+  background: white;
+  padding: 3rem;
+  border-radius: 32px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+}
+
+.empty-anim { font-size: 3.5rem; margin-bottom: 1rem; }
+.not-found-content h3 { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
+.not-found-content p { color: #64748b; margin-bottom: 2rem; }
+
+.btn-premium {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 1.1rem 2.5rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 auto;
+}
+
+.btn-premium:hover {
+  background: #0ea5e9;
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(14, 165, 233, 0.3);
+}
+
+/* Modal Styling */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
 }
 
-.modal-content {
-  width: 90%;
-  max-width: 600px;
+.glass-modal {
+  width: 95%;
+  max-width: 650px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 32px;
   padding: 3rem;
-  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 50px 100px rgba(0,0,0,0.15);
 }
 
-.modal-content h2 { font-size: 1.75rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
-.modal-content p { color: #64748b; margin-bottom: 2rem; }
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
+}
 
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; text-align: left; }
+.modal-header h2 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.4rem; }
+.btn-close {
+  background: #f1f5f9;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 .form-group.full { grid-column: span 2; }
-.form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem; }
-.form-group input { width: 100%; padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 1rem; }
+.form-group label { display: block; font-size: 0.8rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.6rem; }
 
-.modal-actions { margin-top: 2.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
-.btn-secondary { background: #f1f5f9; color: #475569; border: none; padding: 0.85rem 1.5rem; border-radius: 9999px; font-weight: 600; cursor: pointer; }
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
 
-.slide-up-enter-active { transition: all 0.4s ease-out; }
-.slide-up-enter-from { opacity: 0; transform: translateY(30px); }
+.input-with-icon i { position: absolute; left: 1.25rem; font-style: normal; font-size: 1.25rem; }
+.input-with-icon input {
+  width: 100%;
+  padding: 1.1rem 1rem 1.1rem 3.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  outline: none;
+  transition: 0.3s;
+}
+
+.input-with-icon input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1); }
+
+.modal-footer {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.5rem;
+}
+
+.btn-ghost { background: transparent; border: none; font-weight: 700; color: #64748b; cursor: pointer; }
+.btn-submit {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 1.1rem 2.5rem;
+  border-radius: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: 0.3s;
+}
+
+.btn-submit:hover { background: #0284c7; transform: translateY(-2px); }
+
+/* Transitions */
+.fade-scale-enter-active { transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+.fade-scale-enter-from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.slide-up { animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
+/* --- DARK MODE SUPPORT --- */
+:root.dark .search-page {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+:root.dark .hero-section {
+  background: radial-gradient(circle at top right, #0f172a 0%, #020617 100%);
+}
+
+:root.dark .hero-content h1 { color: #f8fafc; }
+:root.dark .hero-content p { color: #94a3b8; }
+
+:root.dark .search-glass {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+:root.dark .glass-input { color: #f8fafc; }
+:root.dark .search-icon { color: #64748b; }
+
+:root.dark .results-dropdown {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root.dark .dropdown-header { color: #64748b; border-color: #1e293b; }
+:root.dark .dropdown-item:hover { background: #1e293b; }
+:root.dark .asoc-name { color: #f8fafc; }
+:root.dark .meta-tag { background: #1e293b; color: #94a3b8; }
+
+:root.dark .not-found-content {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+:root.dark .not-found-content h3 { color: #f8fafc; }
+:root.dark .btn-premium { background: #0ea5e9; }
+:root.dark .btn-premium:hover { background: #0284c7; }
+
+:root.dark .glass-modal {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root.dark .modal-header h2 { color: #f8fafc; }
+:root.dark .modal-header p { color: #94a3b8; }
+:root.dark .btn-close { background: #1e293b; color: #94a3b8; }
+
+:root.dark .input-with-icon input {
+  background: #020617;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+:root.dark .input-with-icon input:focus { border-color: #0ea5e9; }
+:root.dark .btn-ghost { color: #94a3b8; }
 </style>

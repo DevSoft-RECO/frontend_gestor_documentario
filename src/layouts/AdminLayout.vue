@@ -10,7 +10,7 @@
 
       <AdminHeader />
 
-      <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 relative custom-scrollbar">
+      <main class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto relative custom-scrollbar">
         <RouterView v-slot="{ Component }">
             <component :is="Component" />
         </RouterView>
