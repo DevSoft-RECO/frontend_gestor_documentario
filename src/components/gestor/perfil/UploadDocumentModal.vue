@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 interface CategoriaMaster {
   id: number
@@ -8,11 +9,17 @@ interface CategoriaMaster {
   subcategorias: SubcategoriaMaster[]
 }
 
+interface Puesto {
+  id: number
+  nombre: string
+}
+
 interface SubcategoriaMaster {
   id: number
   categoria_id: number
   nombre: string
   estado: boolean
+  puestos_autorizados?: Puesto[]
 }
 
 const props = defineProps<{
@@ -22,6 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['close', 'uploadSuccess'])
 
+const authStore = useAuthStore()
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const uploadForm = ref({
@@ -34,11 +42,37 @@ const uploadForm = ref({
 })
 const isUploading = ref(false)
 
+const canSeeSubcategoria = (sub: SubcategoriaMaster) => {
+  // 1. Bypass para Super Admin
+  if (authStore.user?.roles?.includes('Super Admin') || authStore.user?.roles?.includes('Administrador')) {
+    return true
+  }
+
+  // 2. POLÍTICA ESTRICTA: Si no tiene puestos restringidos, se OCULTA por seguridad
+  if (!sub.puestos_autorizados || sub.puestos_autorizados.length === 0) {
+    return false
+  }
+
+  // 3. Verificar si el puesto del usuario está autorizado
+  const idPuestoUsuario = authStore.user?.id_puesto
+  return sub.puestos_autorizados.some(p => p.id === idPuestoUsuario)
+}
+
+const filteredCategoriasMaster = computed(() => {
+  return props.categoriasMaster
+    .filter(c => c.estado)
+    .map(c => ({
+      ...c,
+      subcategorias: c.subcategorias.filter(s => s.estado && canSeeSubcategoria(s))
+    }))
+    .filter(c => c.subcategorias.length > 0) // Solo mostrar categorías que tengan al menos una subcategoría visible
+})
+
 const activeSubcategoriasForUpload = computed(() => {
   const catId = Number(uploadForm.value.categoria_id)
   if (!catId) return []
-  const cat = props.categoriasMaster.find(c => c.id === catId)
-  return cat ? cat.subcategorias.filter(s => s.estado) : []
+  const cat = filteredCategoriasMaster.value.find(c => c.id === catId)
+  return cat ? cat.subcategorias : []
 })
 
 const handleFileSelect = (event: Event) => {
@@ -70,7 +104,7 @@ const uploadDocument = async () => {
   formData.append('documento', uploadForm.value.file)
 
   try {
-    const token = localStorage.getItem('token') || ''
+    const token = sessionStorage.getItem('access_token') || ''
     const res = await fetch(`${API_URL}/api/gestor/documentos/upload`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
@@ -107,7 +141,7 @@ const uploadDocument = async () => {
         <label>1. Categoría Principal</label>
         <select v-model="uploadForm.categoria_id" class="custom-select">
           <option value="">Selecciona una familia...</option>
-          <option v-for="cat in props.categoriasMaster.filter(c => c.estado)" :key="cat.id" :value="cat.id">
+          <option v-for="cat in filteredCategoriasMaster" :key="cat.id" :value="cat.id">
             {{ cat.nombre }}
           </option>
         </select>

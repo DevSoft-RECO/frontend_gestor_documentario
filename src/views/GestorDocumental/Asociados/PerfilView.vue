@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 import PerfilHeader from '@/components/gestor/perfil/PerfilHeader.vue'
 import ExpedienteGrid from '@/components/gestor/perfil/ExpedienteGrid.vue'
@@ -40,6 +41,7 @@ interface GrupoCategoria {
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const asociado = ref<Asociado | null>(null)
@@ -56,10 +58,13 @@ const loadAllData = async () => {
   isLoading.value = true
   try {
     const asociadoId = route.params.id as string
+    const token = sessionStorage.getItem('access_token')
+    const headers = { 'Authorization': `Bearer ${token}` }
+
     const [resAsociado, resDocs, resCats] = await Promise.all([
-      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}`),
-      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}/expediente`),
-      fetch(`${API_URL}/api/gestor/categorias`)
+      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}`, { headers }),
+      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}/expediente`, { headers }),
+      fetch(`${API_URL}/api/gestor/categorias`, { headers })
     ])
 
     if (!resAsociado.ok) throw new Error('Asociado no encontrado')
@@ -76,13 +81,26 @@ const loadAllData = async () => {
   }
 }
 
-// Transform the flat document list into categorized groups
+// Transform the flat document list into categorized groups with permission check
 const expedienteAgrupado = computed<GrupoCategoria[]>(() => {
   if (!expedientesBrutos.value) return []
   
   const map = new Map<number, GrupoCategoria>()
   
+  // Helper para verificar permiso (ESTRICTO)
+  const canSeeSubcategoria = (sub: any) => {
+    if (authStore.user?.roles?.includes('Super Admin') || authStore.user?.roles?.includes('Administrador')) return true
+    
+    // Si no tiene puestos asignados, se oculta
+    if (!sub.puestos_autorizados || sub.puestos_autorizados.length === 0) return false
+    
+    return sub.puestos_autorizados.some((p: any) => p.id === authStore.user?.id_puesto)
+  }
+
   expedientesBrutos.value.forEach(doc => {
+    // Verificamos si el usuario tiene permiso para ver esta subcategoría
+    if (!canSeeSubcategoria(doc.subcategoria)) return
+
     const catId = doc.subcategoria.categoria.id
     const catName = doc.subcategoria.categoria.nombre
     
