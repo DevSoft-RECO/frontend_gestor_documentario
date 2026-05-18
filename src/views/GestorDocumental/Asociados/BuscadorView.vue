@@ -159,14 +159,14 @@ const registerAsociado = async () => {
                 </div>
               </div>
               <div class="form-group">
-                <label>Documento DPI (CUI)</label>
+                <label>Documento DPI</label>
                 <div class="input-with-icon">
                   <i>🆔</i>
                   <input v-model="form.dpi" type="text" placeholder="13 dígitos">
                 </div>
               </div>
               <div class="form-group">
-                <label>Código Interno</label>
+                <label>Código Cliente</label>
                 <div class="input-with-icon">
                   <i>🔢</i>
                   <input v-model="form.codigo_cliente" type="text" placeholder="Ej. 1025-X">
