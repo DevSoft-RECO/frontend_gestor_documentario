@@ -156,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useAuthStore } from '@/stores/auth'
@@ -164,7 +164,6 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const layoutStore = useLayoutStore()
 const authStore = useAuthStore()
-const openGroups = ref<string[]>([])
 
 // --- NUEVA FUNCIÓN PARA CERRAR EN MÓVIL ---
 const handleItemClick = () => {
@@ -210,15 +209,6 @@ const menuItems = computed(() => {
 
 
 const isActive = (path: string) => route.path === path
-
-const handleGroupClick = (id: string) => {
-    if (layoutStore.isCollapsed) return
-    if (openGroups.value.includes(id)) {
-        openGroups.value = []
-    } else {
-        openGroups.value = [id]
-    }
-}
 </script>
 
 <style scoped>

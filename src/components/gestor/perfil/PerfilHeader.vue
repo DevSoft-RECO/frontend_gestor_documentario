@@ -14,12 +14,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['back', 'addDocument'])
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('es-GT', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  })
-}
 </script>
 
 <template>
