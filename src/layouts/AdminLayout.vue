@@ -17,6 +17,8 @@
       </main>
     </div>
 
+    <!-- WIDGET DE SUBIDAS EN SEGUNDO PLANO (Estilo Google Drive) -->
+    <UploadManagerWidget />
 
   </div>
 </template>
@@ -25,6 +27,7 @@
 import { onMounted, onUnmounted } from 'vue' // Agregamos onUnmounted
 import AdminSidebar from "../components/layout/AdminSidebar.vue"
 import AdminHeader from "../components/layout/AdminHeader.vue"
+import UploadManagerWidget from "../components/gestor/perfil/UploadManagerWidget.vue"
 import { useLayoutStore } from "@/stores/layout"
 
 const layoutStore = useLayoutStore()

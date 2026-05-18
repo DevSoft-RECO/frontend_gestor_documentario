@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUploadStore } from '@/stores/upload'
 
 import PerfilHeader from '@/components/gestor/perfil/PerfilHeader.vue'
 import ExpedienteGrid from '@/components/gestor/perfil/ExpedienteGrid.vue'
@@ -42,6 +43,7 @@ interface GrupoCategoria {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const uploadStore = useUploadStore()
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const asociado = ref<Asociado | null>(null)
@@ -123,7 +125,15 @@ const handleOpenViewer = (doc: Documento) => {
   showViewerModal.value = true
 }
 
-onMounted(loadAllData)
+onMounted(() => {
+  loadAllData()
+  uploadStore.onUploadCompleted((asociadoId) => {
+    // Solo recargar si la carga completada pertenece al asociado que estamos visualizando actualmente
+    if (asociadoId === route.params.id as string) {
+      loadAllData()
+    }
+  })
+})
 </script>
 
 <template>

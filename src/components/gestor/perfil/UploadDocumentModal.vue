@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useUploadStore } from '@/stores/upload'
 
 interface CategoriaMaster {
   id: number
@@ -30,7 +31,7 @@ const props = defineProps<{
 const emit = defineEmits(['close', 'uploadSuccess'])
 
 const authStore = useAuthStore()
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const uploadStore = useUploadStore()
 
 const uploadForm = ref({
   categoria_id: '',
@@ -40,7 +41,6 @@ const uploadForm = ref({
   fecha_vencimiento: '',
   file: null as File | null
 })
-const isUploading = ref(false)
 
 const canSeeSubcategoria = (sub: SubcategoriaMaster) => {
   // 1. Bypass para Super Admin
@@ -82,48 +82,33 @@ const handleFileSelect = (event: Event) => {
   }
 }
 
-const uploadDocument = async () => {
+const uploadDocument = () => {
   if (!uploadForm.value.subcategoria_id || !uploadForm.value.file) {
     alert('Por favor selecciona una subcategoría y un archivo PDF.')
     return
   }
 
-  isUploading.value = true
-  const formData = new FormData()
-  formData.append('asociado_id', props.asociadoId)
-  formData.append('subcategoria_id', uploadForm.value.subcategoria_id)
-  if (uploadForm.value.etiqueta) {
-    formData.append('etiqueta', uploadForm.value.etiqueta)
-  }
-  if (uploadForm.value.numero_documento) {
-    formData.append('numero_documento', uploadForm.value.numero_documento)
-  }
-  if (uploadForm.value.fecha_vencimiento) {
-    formData.append('fecha_vencimiento', uploadForm.value.fecha_vencimiento)
-  }
-  formData.append('documento', uploadForm.value.file)
+  // Despachar la carga en segundo plano al almacén Pinia
+  uploadStore.uploadFile({
+    file: uploadForm.value.file,
+    asociadoId: props.asociadoId,
+    subcategoriaId: uploadForm.value.subcategoria_id,
+    etiqueta: uploadForm.value.etiqueta || undefined,
+    numeroDocumento: uploadForm.value.numero_documento || undefined,
+    fechaVencimiento: uploadForm.value.fecha_vencimiento || undefined
+  })
 
-  try {
-    const token = sessionStorage.getItem('access_token') || ''
-    const res = await fetch(`${API_URL}/api/gestor/documentos/upload`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
-    })
-    
-    if (res.ok) {
-      uploadForm.value = { categoria_id: '', subcategoria_id: '', etiqueta: '', numero_documento: '', fecha_vencimiento: '', file: null }
-      emit('uploadSuccess')
-    } else {
-      const data = await res.json()
-      alert(`Error: ${data.error}`)
-    }
-  } catch (e) {
-    console.error(e)
-    alert('Error al subir el documento')
-  } finally {
-    isUploading.value = false
+  // Limpiar el formulario y cerrar el modal inmediatamente
+  uploadForm.value = { 
+    categoria_id: '', 
+    subcategoria_id: '', 
+    etiqueta: '', 
+    numero_documento: '', 
+    fecha_vencimiento: '', 
+    file: null 
   }
+  
+  emit('close')
 }
 </script>
 
@@ -208,10 +193,9 @@ const uploadDocument = async () => {
         <button 
           @click="uploadDocument" 
           class="btn-primary" 
-          :disabled="!uploadForm.file || isUploading"
+          :disabled="!uploadForm.file"
         >
-          <span v-if="isUploading" class="spinner-small"></span>
-          {{ isUploading ? 'Subiendo...' : 'Crear Fólder Maestro' }}
+          Crear Fólder Maestro
         </button>
       </div>
     </div>
