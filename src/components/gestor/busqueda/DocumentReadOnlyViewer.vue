@@ -79,28 +79,40 @@ const renderPDF = async () => {
     const dataUrl = await resUrl.json()
     const url = dataUrl.url
     
-    // PDF.js con la URL firmada (no necesita headers de auth porque la URL ya tiene firma de GCS!)
+    // PDF.js con la URL firmada
     const loadingTask = pdfjsLib.getDocument({ url })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
     pagesContainer.value.innerHTML = ''
 
+    // 1. Crear placeholders
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       const page = await pdfDoc.getPage(i)
       const viewport = page.getViewport({ scale: zoomLevel.value })
+      
       const pageDiv = document.createElement('div')
       pageDiv.className = 'pdf-page-wrapper'
       pageDiv.dataset.pageNumber = i.toString()
+      pageDiv.dataset.rendered = 'false'
+      
       const canvas = document.createElement('canvas')
-      const context = canvas.getContext('2d')
       canvas.height = viewport.height
       canvas.width = viewport.width
+      
+      const pageLoader = document.createElement('div')
+      pageLoader.className = 'page-skeleton-loader'
+      pageLoader.innerHTML = `
+        <div class="skeleton-spinner"></div>
+        <span>Cargando Página ${i}...</span>
+      `
+      
       pageDiv.appendChild(canvas)
+      pageDiv.appendChild(pageLoader)
       pagesContainer.value.appendChild(pageDiv)
-      await page.render({ canvasContext: context!, viewport, canvas }).promise
     }
 
+    // 2. IntersectionObserver
     setupIntersectionObserver()
     
     if (props.initialPage) {
@@ -115,14 +127,42 @@ const renderPDF = async () => {
 
 const setupIntersectionObserver = () => {
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
+    entries.forEach(async (entry) => {
+      const pageWrapper = entry.target as HTMLElement
+      const pageNum = parseInt(pageWrapper.dataset.pageNumber || '1')
+      
       if (entry.isIntersecting) {
-        currentPage.value = parseInt((entry.target as HTMLElement).dataset.pageNumber || '1')
+        currentPage.value = pageNum
+        
+        // Carga perezosa
+        if (pageWrapper.dataset.rendered === 'false') {
+          pageWrapper.dataset.rendered = 'rendering'
+          
+          try {
+            const canvas = pageWrapper.querySelector('canvas')
+            const loader = pageWrapper.querySelector('.page-skeleton-loader')
+            
+            if (canvas && pdfDoc) {
+              const page = await pdfDoc.getPage(pageNum)
+              const viewport = page.getViewport({ scale: zoomLevel.value })
+              const context = canvas.getContext('2d')
+              
+              await page.render({ canvasContext: context!, viewport, canvas }).promise
+              
+              pageWrapper.dataset.rendered = 'true'
+              if (loader) loader.remove()
+            }
+          } catch (err) {
+            console.error(`Error renderizando página ${pageNum}:`, err)
+            pageWrapper.dataset.rendered = 'false'
+          }
+        }
       }
     })
   }, {
     root: scrollContainer.value,
-    threshold: 0.5
+    threshold: 0.05,
+    rootMargin: '400px 0px'
   })
 
   document.querySelectorAll('.pdf-page-wrapper').forEach(p => observer.observe(p))
@@ -306,10 +346,53 @@ watch(zoomLevel, renderPDF)
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :deep(.pdf-page-wrapper) {
+  position: relative;
   background: white;
   margin-bottom: 2.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
   border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 800px;
+}
+
+:deep(.page-skeleton-loader) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  z-index: 10;
+}
+
+:root.dark :deep(.page-skeleton-loader) {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+:deep(.skeleton-spinner) {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0ea5e9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+:root.dark :deep(.skeleton-spinner) {
+  border-color: #334155;
+  border-top-color: #38bdf8;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .custom-scrollbar::-webkit-scrollbar {
