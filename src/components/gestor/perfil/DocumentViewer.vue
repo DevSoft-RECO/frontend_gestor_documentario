@@ -101,13 +101,19 @@ const renderPDF = async () => {
   
   try {
     const token = sessionStorage.getItem('access_token')
-    const url = `${API_URL}${props.documento.file_path}?t=${new Date().getTime()}`
     
-    // PDF.js con Headers de Autorización
-    const loadingTask = pdfjsLib.getDocument({
-      url,
-      httpHeaders: { 'Authorization': `Bearer ${token}` }
+    // Obtener la URL firmada temporal de GCS desde el backend
+    const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     })
+    if (!resUrl.ok) {
+      throw new Error("No se pudo obtener la URL firmada del documento")
+    }
+    const dataUrl = await resUrl.json()
+    const url = dataUrl.url
+    
+    // PDF.js con la URL firmada (no necesita headers de auth porque la URL ya tiene firma de GCS!)
+    const loadingTask = pdfjsLib.getDocument({ url })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
@@ -247,12 +253,17 @@ const executeOperation = async () => {
 const downloadPDF = async () => {
   try {
     const token = sessionStorage.getItem('access_token')
-    const url = `${API_URL}${props.documento.file_path}`
     
-    // Descargamos el archivo como blob para forzar la descarga directa
-    const res = await fetch(url, {
+    // Obtener la URL firmada temporal de GCS desde el backend
+    const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
+    if (!resUrl.ok) throw new Error("No se pudo obtener la URL firmada del documento")
+    const dataUrl = await resUrl.json()
+    const url = dataUrl.url
+    
+    // Descargamos el archivo como blob para forzar la descarga directa
+    const res = await fetch(url)
     const blob = await res.blob()
     const blobUrl = URL.createObjectURL(blob)
     
@@ -267,20 +278,23 @@ const downloadPDF = async () => {
     URL.revokeObjectURL(blobUrl)
   } catch (e) {
     console.error("Error al descargar:", e)
-    // Fallback básico
-    window.open(`${API_URL}${props.documento.file_path}`, '_blank')
   }
 }
 
 const printPDF = async () => {
   try {
     const token = sessionStorage.getItem('access_token')
-    const url = `${API_URL}${props.documento.file_path}`
     
-    // 1. Descargamos el archivo como Blob para evitar errores de Cross-Origin (CORS)
-    const res = await fetch(url, {
+    // Obtener la URL firmada temporal de GCS desde el backend
+    const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
+    if (!resUrl.ok) throw new Error("No se pudo obtener la URL firmada del documento")
+    const dataUrl = await resUrl.json()
+    const url = dataUrl.url
+    
+    // 1. Descargamos el archivo como Blob para evitar errores de Cross-Origin (CORS)
+    const res = await fetch(url)
     const blob = await res.blob()
     const blobUrl = URL.createObjectURL(blob)
     
@@ -304,8 +318,6 @@ const printPDF = async () => {
     }
   } catch (e) {
     console.error("Error al intentar imprimir:", e)
-    // Fallback: abrir en pestaña nueva si falla el blob
-    window.open(`${API_URL}${props.documento.file_path}`, '_blank')
   }
 }
 

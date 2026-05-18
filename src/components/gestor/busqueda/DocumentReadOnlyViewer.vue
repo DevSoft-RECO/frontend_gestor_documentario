@@ -68,12 +68,19 @@ const renderPDF = async () => {
   
   try {
     const token = sessionStorage.getItem('access_token')
-    const url = `${API_URL}${props.documento.file_path}?t=${new Date().getTime()}`
     
-    const loadingTask = pdfjsLib.getDocument({
-      url,
-      httpHeaders: { 'Authorization': `Bearer ${token}` }
+    // Obtener la URL firmada temporal de GCS desde el backend
+    const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     })
+    if (!resUrl.ok) {
+      throw new Error("No se pudo obtener la URL firmada del documento")
+    }
+    const dataUrl = await resUrl.json()
+    const url = dataUrl.url
+    
+    // PDF.js con la URL firmada (no necesita headers de auth porque la URL ya tiene firma de GCS!)
+    const loadingTask = pdfjsLib.getDocument({ url })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
@@ -129,38 +136,60 @@ const jumpToPage = (pageNum: number) => {
 }
 
 const downloadPDF = async () => {
-  const token = sessionStorage.getItem('access_token')
-  const res = await fetch(`${API_URL}${props.documento.file_path}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  const blob = await res.blob()
-  const blobUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = blobUrl
-  link.setAttribute('download', `${props.documento.subcategoria?.nombre || 'documento'}.pdf`)
-  link.click()
-  URL.revokeObjectURL(blobUrl)
+  try {
+    const token = sessionStorage.getItem('access_token')
+    
+    // Obtener la URL firmada temporal de GCS desde el backend
+    const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!resUrl.ok) throw new Error("No se pudo obtener la URL firmada del documento")
+    const dataUrl = await resUrl.json()
+    const url = dataUrl.url
+    
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.setAttribute('download', `${props.documento.subcategoria?.nombre || 'documento'}.pdf`)
+    link.click()
+    URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    console.error("Error al descargar:", e)
+  }
 }
 
 const printPDF = async () => {
-  const token = sessionStorage.getItem('access_token')
-  const res = await fetch(`${API_URL}${props.documento.file_path}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  const blob = await res.blob()
-  const blobUrl = URL.createObjectURL(blob)
-  const iframe = document.createElement('iframe')
-  iframe.style.display = 'none'
-  iframe.src = blobUrl
-  document.body.appendChild(iframe)
-  iframe.onload = () => {
-    setTimeout(() => {
-      iframe.contentWindow?.print()
+  try {
+    const token = sessionStorage.getItem('access_token')
+    
+    // Obtener la URL firmada GCS temporal del backend
+    const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!resUrl.ok) throw new Error("No se pudo obtener la URL firmada del documento")
+    const dataUrl = await resUrl.json()
+    const url = dataUrl.url
+    
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.src = blobUrl
+    document.body.appendChild(iframe)
+    iframe.onload = () => {
       setTimeout(() => {
-        document.body.removeChild(iframe)
-        URL.revokeObjectURL(blobUrl)
-      }, 2000)
-    }, 500)
+        iframe.contentWindow?.print()
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          URL.revokeObjectURL(blobUrl)
+        }, 2000)
+      }, 500)
+    }
+  } catch (e) {
+    console.error("Error al imprimir:", e)
   }
 }
 
