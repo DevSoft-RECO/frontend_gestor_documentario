@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+
 /**
  * Estructura de datos para los documentos del expediente
  */
@@ -37,59 +39,159 @@ const formatDate = (dateStr: string) => {
     year: 'numeric', month: 'long', day: 'numeric'
   })
 }
+
+// --- Estados de Filtros Reactivos ---
+const selectedFolderId = ref<number | 'all'>('all')
+const searchQuery = ref('')
+
+// --- Lógica de Filtrado Reactivo (Respeta Permisos de la BD) ---
+const filteredExpedienteAgrupado = computed(() => {
+  let result = props.expedienteAgrupado
+
+  // 1. Filtrar por Fólder (Categoría)
+  if (selectedFolderId.value !== 'all') {
+    result = result.filter(grupo => grupo.id === selectedFolderId.value)
+  }
+
+  // 2. Filtrar por Nombre de Subcategoría (Buscador)
+  if (searchQuery.value.trim() !== '') {
+    const query = searchQuery.value.toLowerCase().trim()
+    result = result.map(grupo => {
+      return {
+        ...grupo,
+        documentos: grupo.documentos.filter(doc => 
+          doc.subcategoria.nombre.toLowerCase().includes(query)
+        )
+      }
+    }).filter(grupo => grupo.documentos.length > 0) // Oculta carpetas vacías tras buscar
+  }
+
+  return result
+})
+
+// Limpiar filtros al fallar la búsqueda
+const resetFilters = () => {
+  selectedFolderId.value = 'all'
+  searchQuery.value = ''
+}
 </script>
 
 <template>
   <div class="expediente-content">
-    <!-- Estado Vacío -->
-    <div v-if="props.expedienteAgrupado.length === 0" class="empty-state glass-card">
-      <div class="empty-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+    
+    <!-- Panel de Navegación y Búsqueda (Control del Archivador) -->
+    <div v-if="props.expedienteAgrupado.length > 0" class="archive-control-panel shadow-sm">
+      <div class="control-grid">
+        <!-- Selector de Folder -->
+        <div class="control-field">
+          <label class="control-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Filtrar por Fólder</span>
+          </label>
+          <div class="select-wrapper">
+            <select v-model="selectedFolderId" class="premium-select">
+              <option value="all">📂 Todos los Fólderes</option>
+              <option v-for="grupo in props.expedienteAgrupado" :key="grupo.id" :value="grupo.id">
+                📁 Fólder: {{ grupo.nombre }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Buscador de Subcategoría -->
+        <div class="control-field">
+          <label class="control-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Buscar Subcategoría</span>
+          </label>
+          <div class="search-wrapper">
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Ej: DPI, Contrato, Firma..." 
+              class="premium-search-input"
+            />
+            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn" title="Limpiar búsqueda">×</button>
+          </div>
+        </div>
       </div>
-      <h3>Expediente en Blanco</h3>
-      <p>No se han encontrado documentos digitalizados para <strong>{{ props.asociadoNombre }}.</strong></p>
-      <button @click="emit('addDocument')" class="btn-primary-outline mt-6">Comenzar a Armar Expediente</button>
     </div>
 
-    <!-- Lista por Categorías -->
-    <div v-else class="categorias-stack">
-      <div v-for="grupo in props.expedienteAgrupado" :key="grupo.id" class="categoria-section">
-        <div class="categoria-header">
-          <div class="header-left">
-            <div class="folder-dot"></div>
-            <h2>{{ grupo.nombre }}</h2>
-          </div>
-          <span class="doc-count">{{ grupo.documentos.length }} Archivos</span>
+    <!-- Estado Vacío Absoluto (Gaveta vacía de la BD) -->
+    <div v-if="props.expedienteAgrupado.length === 0" class="empty-state glass-card">
+      <div class="empty-icon-wrapper">
+        <div class="cabinet-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
         </div>
-        
-        <div class="docs-grid">
-          <div v-for="doc in grupo.documentos" :key="doc.id" class="doc-card" @click="emit('openViewer', doc)">
-            <div class="doc-card-body">
-              <div class="doc-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                <div class="status-indicator"></div>
+      </div>
+      <h3>Archivador Vacío</h3>
+      <p>No se han encontrado fólderes ni documentos archivados en la gaveta de <strong>{{ props.asociadoNombre }}.</strong></p>
+      <button @click="emit('addDocument')" class="btn-primary-outline mt-6">Abrir Nuevo Fólder</button>
+    </div>
+
+    <!-- Estado Sin Resultados por Filtros -->
+    <div v-else-if="filteredExpedienteAgrupado.length === 0" class="no-results-state glass-card animate-in fade-in">
+      <div class="empty-icon-wrapper">
+        <div class="search-off-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="8" x2="14" y2="14"/><line x1="14" y1="8" x2="8" y2="14"/></svg>
+        </div>
+      </div>
+      <h3>Sin Coincidencias</h3>
+      <p>No encontramos ningún documento o subcategoría con esos filtros en la gaveta de <strong>{{ props.asociadoNombre }}.</strong></p>
+      <button @click="resetFilters" class="btn-primary-outline mt-6">Restablecer Archivador</button>
+    </div>
+
+    <!-- Lista por Categorías Filtrada (Carpetas de Suspensión) -->
+    <div v-else class="categorias-stack">
+      <div v-for="grupo in filteredExpedienteAgrupado" :key="grupo.id" class="folder-hanging-wrapper">
+        <!-- Pestaña superior del Folder Colgante (Hanging Folder Tab) -->
+        <div class="hanging-folder-tab">
+          <div class="tab-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>FÓLDER: {{ grupo.nombre }}</span>
+          </div>
+          <span class="tab-badge">{{ grupo.documentos.length }} {{ grupo.documentos.length === 1 ? 'Doc' : 'Docs' }}</span>
+        </div>
+
+        <!-- Cuerpo de la Carpeta Manila Colgante -->
+        <div class="folder-body-card">
+          <!-- Varillas de suspensión metálicas (estéticas) -->
+          <div class="suspension-bar-left"></div>
+          <div class="suspension-bar-right"></div>
+          
+          <!-- Hojas de papel dentro del Folder -->
+          <div class="docs-grid">
+            <div v-for="doc in grupo.documentos" :key="doc.id" class="doc-sheet-card" @click="emit('openViewer', doc)">
+              <!-- Clip Metálico de Sujeción (Paperclip Decorator) -->
+              <div class="paperclip-decorator">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </div>
-              
-              <div class="doc-info">
-                <span class="meta-label">Documento Oficial</span>
-                <h4>{{ doc.subcategoria.nombre }}</h4>
-                <div class="doc-details">
-                  <div class="detail-item">
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span>{{ formatDate(doc.fecha_creacion) }}</span>
+
+              <div class="doc-sheet-body">
+                <div class="sheet-header">
+                  <span class="sheet-tag">Hoja Archivada</span>
+                  <div class="sheet-status-dot"></div>
+                </div>
+                
+                <h4 class="sheet-title">{{ doc.subcategoria.nombre }}</h4>
+                
+                <div class="sheet-meta">
+                  <div class="meta-item">
+                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Fecha: {{ formatDate(doc.fecha_creacion) }}</span>
                   </div>
-                  <!-- Nuevo campo de Creador -->
-                  <div class="detail-item creator">
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    <span>{{ doc.usuario?.name || 'Sistema' }}</span>
+                  <div class="meta-item archivist">
+                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    <span>Archivó: {{ doc.usuario?.name || 'Sistema' }}</span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="doc-action">
-              <span>Abrir Fólder</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              <!-- Acción de la hoja de papel -->
+              <div class="sheet-action">
+                <span>Extraer y Leer</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              </div>
             </div>
           </div>
         </div>
@@ -100,190 +202,346 @@ const formatDate = (dateStr: string) => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
 
 .expediente-content {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  padding-bottom: 2rem;
+  padding-bottom: 4rem;
 }
 
-/* Glass Card Global */
-.glass-card {
-  background: white;
+/* --- PANEL DE CONTROL Y NAVEGACIÓN --- */
+.archive-control-panel {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+  padding: 1.5rem 2rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
 }
 
-.empty-state {
+.control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.control-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.select-wrapper, .search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.premium-select, .premium-search-input {
+  width: 100%;
+  background: white;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.3s;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.premium-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1.2rem center;
+  background-size: 1.25rem;
+  padding-right: 3rem;
+}
+
+.premium-select:focus, .premium-search-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1), inset 0 2px 4px rgba(0,0,0,0.01);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 1rem;
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-search-btn:hover {
+  background: #0ea5e9;
+  color: white;
+}
+
+/* --- ESTADOS VACÍOS Y SIN COINCIDENCIAS --- */
+.empty-state, .no-results-state {
+  background: white;
+  border-radius: 28px;
+  border: 1px dashed #cbd5e1;
   padding: 5rem 2rem;
   text-align: center;
-  border: 2px dashed #e2e8f0;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.02);
 }
 
-.empty-icon {
-  margin-bottom: 1.5rem;
-  color: #cbd5e1;
+.empty-icon-wrapper {
+  width: 100px;
+  height: 100px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem auto;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.empty-state h3 {
-  font-size: 1.5rem;
+.cabinet-icon, .search-off-icon {
+  color: #94a3b8;
+}
+
+.empty-state h3, .no-results-state h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.65rem;
   font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 0.5rem;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
 }
 
-.empty-state p {
+.empty-state p, .no-results-state p {
   color: #64748b;
-  max-width: 400px;
+  max-width: 420px;
   margin: 0 auto;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .btn-primary-outline {
   background: transparent;
   color: #0ea5e9;
   border: 2px solid #0ea5e9;
-  padding: 0.85rem 2rem;
-  border-radius: 16px;
-  font-weight: 700;
+  padding: 0.9rem 2.25rem;
+  border-radius: 18px;
+  font-weight: 800;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .btn-primary-outline:hover {
   background: #0ea5e9;
   color: white;
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.25);
+  transform: translateY(-2px);
 }
 
 .mt-6 { margin-top: 1.5rem; }
 
-/* Secciones de Categoría */
+/* --- CONTENEDOR DE FÓLDER COLGANTE --- */
 .categorias-stack {
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 4rem;
 }
 
-.categoria-header {
+.folder-hanging-wrapper {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  flex-direction: column;
 }
 
-.header-left {
+/* Pestaña del Fólder Colgante */
+.hanging-folder-tab {
+  align-self: flex-start;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
+  background: linear-gradient(135deg, #475569 0%, #334155 100%); /* Color Fólder Colgante Clásico */
+  color: white;
+  padding: 0.65rem 1.75rem 0.5rem 1.75rem;
+  border-radius: 12px 12px 0 0;
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 
+    0 -4px 10px rgba(0,0,0,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  margin-left: 2rem;
+  z-index: 10;
 }
 
-.folder-dot {
-  width: 10px;
-  height: 10px;
-  background: #0ea5e9;
-  border-radius: 50%;
-}
-
-.categoria-header h2 {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
-
-.doc-count {
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   font-size: 0.75rem;
-  font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
-/* Docs Grid */
+.tab-badge {
+  font-size: 0.65rem;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.15);
+  color: #38bdf8;
+  padding: 0.15rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+/* Cuerpo de la Carpeta Manila Colgante */
+.folder-body-card {
+  position: relative;
+  background: #fdfaf2; /* Color Cartón Manila Elegante */
+  border: 2px solid #eadecb;
+  border-radius: 24px;
+  padding: 2.25rem 2.25rem;
+  box-shadow: 
+    0 15px 35px -10px rgba(139, 92, 26, 0.06),
+    0 5px 15px rgba(0,0,0,0.02);
+  z-index: 5;
+}
+
+.folder-body-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  background: #d8c2a8;
+  border-radius: 24px 0 0 24px;
+}
+
+/* Varillas de suspensión metálicas en los laterales superiores */
+.suspension-bar-left, .suspension-bar-right {
+  position: absolute;
+  top: -6px;
+  width: 14px;
+  height: 6px;
+  background: linear-gradient(to right, #94a3b8, #64748b);
+  border-radius: 3px 3px 0 0;
+}
+.suspension-bar-left { left: 1rem; }
+.suspension-bar-right { right: 1rem; }
+
+/* Grid de los Documentos (Hojas) */
 .docs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
 }
 
-/* Tarjeta Vertical */
-.doc-card {
+/* --- TARJETA HOJA DE PAPEL (Document Sheet) --- */
+.doc-sheet-card {
+  position: relative;
   background: white;
-  border: 1px solid #f1f5f9;
-  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.01);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.015);
 }
 
-.doc-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+/* Decorador de Clip Metálico de Sujeción */
+.paperclip-decorator {
+  position: absolute;
+  top: -8px;
+  right: 1.5rem;
+  color: #94a3b8;
+  z-index: 10;
+  transform: rotate(-15deg);
+  transition: all 0.3s;
+}
+
+.doc-sheet-card:hover .paperclip-decorator {
+  color: #0ea5e9;
+  transform: rotate(5deg) scale(1.1);
+}
+
+/* Efecto de sacar la hoja de papel del folder */
+.doc-sheet-card:hover {
+  transform: translateY(-10px) rotate(0.5deg);
+  box-shadow: 
+    0 25px 45px -15px rgba(15, 23, 42, 0.15),
+    0 10px 20px -10px rgba(15, 23, 42, 0.1);
   border-color: #bae6fd;
 }
 
-.doc-card-body {
-  padding: 1.5rem;
-  display: flex;
-  gap: 1.25rem;
-  align-items: flex-start;
+.doc-sheet-body {
+  padding: 1.75rem 1.5rem 1.5rem 1.5rem;
+  flex: 1;
 }
 
-.doc-icon-wrapper {
-  width: 52px;
-  height: 52px;
-  background: #f0f9ff;
-  color: #0ea5e9;
-  border-radius: 14px;
+.sheet-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  flex-shrink: 0;
+  margin-bottom: 1rem;
 }
 
-.status-indicator {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 14px;
-  height: 14px;
-  background: #10b981;
-  border: 3px solid white;
-  border-radius: 50%;
-}
-
-.doc-info { flex: 1; }
-
-.meta-label {
+.sheet-tag {
   font-size: 0.65rem;
   font-weight: 800;
   color: #94a3b8;
   text-transform: uppercase;
-  margin-bottom: 0.35rem;
-  display: block;
+  letter-spacing: 0.05em;
 }
 
-.doc-info h4 {
-  margin: 0 0 0.75rem 0;
-  color: #1e293b;
+.sheet-status-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.sheet-title {
+  font-family: 'Outfit', sans-serif;
+  margin: 0 0 1.25rem 0;
+  color: #0f172a;
   font-size: 1.1rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
-.doc-details {
+.sheet-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
-.detail-item {
+.meta-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -292,52 +550,129 @@ const formatDate = (dateStr: string) => {
   font-weight: 600;
 }
 
-.detail-item.creator {
+.meta-item.archivist {
   color: #0ea5e9;
 }
 
-/* Pie de Tarjeta */
-.doc-action {
+/* Pie de la Hoja de Papel */
+.sheet-action {
   margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 800;
-  color: #0ea5e9;
+  color: #64748b;
   padding: 1rem 1.5rem;
   background: #f8fafc;
   border-top: 1px dashed #e2e8f0;
   transition: all 0.3s;
 }
 
-.doc-card:hover .doc-action {
+.doc-sheet-card:hover .sheet-action {
   background: #0ea5e9;
   color: white;
 }
 
 /* --- DARK MODE SUPPORT --- */
-:root.dark .glass-card, :root.dark .doc-card {
-  background: #0f172a;
-  border-color: #1e293b;
+:root.dark .archive-control-panel {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
 }
 
-:root.dark .empty-state { border-color: #1e293b; background: #020617; }
-:root.dark .empty-state h3 { color: #f8fafc; }
+:root.dark .premium-select, :root.dark .premium-search-input {
+  background: #151e2d;
+  border-color: #243249;
+  color: #f8fafc;
+}
 
-:root.dark .categoria-header { border-color: #1e293b; }
-:root.dark .categoria-header h2 { color: #f8fafc; }
-:root.dark .doc-count { background: #1e293b; color: #94a3b8; }
+:root.dark .premium-select:focus, :root.dark .premium-search-input:focus {
+  border-color: #0ea5e9;
+}
 
-:root.dark .doc-info h4 { color: #f8fafc; }
-:root.dark .doc-icon-wrapper { background: #1e293b; }
-:root.dark .status-indicator { border-color: #0f172a; }
-:root.dark .doc-action { background: #020617; border-color: #1e293b; }
+:root.dark .clear-search-btn {
+  background: #1e293b;
+  color: #94a3b8;
+}
 
-:root.dark .detail-item { color: #94a3b8; }
-:root.dark .detail-item.creator { color: #38bdf8; }
+:root.dark .clear-search-btn:hover {
+  background: #0ea5e9;
+  color: white;
+}
+
+:root.dark .empty-state, :root.dark .no-results-state {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+:root.dark .empty-icon-wrapper {
+  background: #1e293b;
+}
+
+:root.dark .empty-state h3, :root.dark .no-results-state h3 {
+  color: #f8fafc;
+}
+
+:root.dark .hanging-folder-tab {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+:root.dark .folder-body-card {
+  background: #151e2d; /* Manila Oscuro / Metal Grisáceo */
+  border-color: #243249;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+}
+
+:root.dark .folder-body-card::before {
+  background: #243249;
+}
+
+:root.dark .doc-sheet-card {
+  background: #0f172a;
+  border-color: #243249;
+}
+
+:root.dark .doc-sheet-card:hover {
+  border-color: #38bdf8;
+}
+
+:root.dark .sheet-title {
+  color: #f8fafc;
+}
+
+:root.dark .meta-item {
+  color: #94a3b8;
+}
+
+:root.dark .meta-item.archivist {
+  color: #38bdf8;
+}
+
+:root.dark .sheet-action {
+  background: #0b111e;
+  border-color: #243249;
+  color: #94a3b8;
+}
+
+:root.dark .doc-sheet-card:hover .sheet-action {
+  background: #0ea5e9;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .control-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
 
 @media (max-width: 640px) {
-  .docs-grid { grid-template-columns: 1fr; }
+  .folder-body-card {
+    padding: 1.5rem;
+  }
+  .hanging-folder-tab {
+    margin-left: 0.5rem;
+  }
 }
 </style>
