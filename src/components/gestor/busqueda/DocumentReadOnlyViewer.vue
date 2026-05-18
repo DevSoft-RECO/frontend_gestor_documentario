@@ -38,10 +38,12 @@ const totalPaginas = ref(0)
 const currentPage = ref(1)
 const zoomLevel = ref(1.1)
 const isRendering = ref(false)
+const downloadProgress = ref(0) // Progreso de descarga 0-100
 const authStore = useAuthStore()
 
 // PDF.js State
 let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
+let currentObserver: IntersectionObserver | null = null
 const pagesContainer = ref<HTMLElement | null>(null)
 const scrollContainer = ref<HTMLElement | null>(null)
 
@@ -61,15 +63,58 @@ const loadIndices = async () => {
   }
 }
 
+/**
+ * Descarga el PDF con progreso real usando ReadableStream.
+ * Retorna un ArrayBuffer con los bytes completos del archivo.
+ */
+const downloadPDFWithProgress = async (url: string): Promise<ArrayBuffer> => {
+  const response = await fetch(url)
+  const contentLength = response.headers.get('Content-Length')
+  const total = contentLength ? parseInt(contentLength, 10) : 0
+
+  if (!total || !response.body) {
+    downloadProgress.value = -1
+    const buffer = await response.arrayBuffer()
+    downloadProgress.value = 100
+    return buffer
+  }
+
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let received = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    received += value.length
+    downloadProgress.value = Math.round((received / total) * 100)
+  }
+
+  const fullArray = new Uint8Array(received)
+  let offset = 0
+  for (const chunk of chunks) {
+    fullArray.set(chunk, offset)
+    offset += chunk.length
+  }
+  return fullArray.buffer
+}
+
 const renderPDF = async () => {
   await nextTick()
   if (!pagesContainer.value) return
   isRendering.value = true
+  downloadProgress.value = 0
+  
+  if (currentObserver) {
+    currentObserver.disconnect()
+    currentObserver = null
+  }
   
   try {
     const token = sessionStorage.getItem('access_token')
     
-    // Obtener la URL firmada temporal de GCS desde el backend
+    // 1. Obtener la URL firmada temporal de GCS
     const resUrl = await fetch(`${API_URL}/api/gestor/documentos/${props.documento.id}/url`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -79,14 +124,19 @@ const renderPDF = async () => {
     const dataUrl = await resUrl.json()
     const url = dataUrl.url
     
-    // PDF.js con la URL firmada
-    const loadingTask = pdfjsLib.getDocument({ url })
+    // 2. Descargar el PDF con progreso visual real
+    const pdfData = await downloadPDFWithProgress(url)
+    
+    // 3. Cargar en PDF.js desde la memoria (sin segunda descarga de red)
+    const loadingTask = pdfjsLib.getDocument({ data: pdfData })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
+    // 4. Limpiar contenedor y ocultar overlay
     pagesContainer.value.innerHTML = ''
+    isRendering.value = false
 
-    // 1. Crear placeholders
+    // 5. Crear placeholders con dimensiones reales
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       const page = await pdfDoc.getPage(i)
       const viewport = page.getViewport({ scale: zoomLevel.value })
@@ -104,15 +154,15 @@ const renderPDF = async () => {
       pageLoader.className = 'page-skeleton-loader'
       pageLoader.innerHTML = `
         <div class="skeleton-spinner"></div>
-        <span>Cargando Página ${i}...</span>
+        <span>Página ${i}</span>
       `
       
       pageDiv.appendChild(canvas)
       pageDiv.appendChild(pageLoader)
-      pagesContainer.value.appendChild(pageDiv)
+      pagesContainer.value!.appendChild(pageDiv)
     }
 
-    // 2. IntersectionObserver
+    // 6. IntersectionObserver para renderizado perezoso de canvas
     setupIntersectionObserver()
     
     if (props.initialPage) {
@@ -120,13 +170,54 @@ const renderPDF = async () => {
     }
   } catch (e) {
     console.error("Error renderizando PDF:", e)
-  } finally {
     isRendering.value = false
   }
 }
 
+/**
+ * Re-renderiza las páginas desde el pdfDoc ya cargado en memoria.
+ * Se usa cuando se cambia el zoom, sin necesidad de volver a descargar.
+ */
+const reRenderPages = async () => {
+  if (!pdfDoc || !pagesContainer.value) return
+  
+  if (currentObserver) {
+    currentObserver.disconnect()
+    currentObserver = null
+  }
+  
+  pagesContainer.value.innerHTML = ''
+  
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i)
+    const viewport = page.getViewport({ scale: zoomLevel.value })
+    
+    const pageDiv = document.createElement('div')
+    pageDiv.className = 'pdf-page-wrapper'
+    pageDiv.dataset.pageNumber = i.toString()
+    pageDiv.dataset.rendered = 'false'
+    
+    const canvas = document.createElement('canvas')
+    canvas.height = viewport.height
+    canvas.width = viewport.width
+    
+    const pageLoader = document.createElement('div')
+    pageLoader.className = 'page-skeleton-loader'
+    pageLoader.innerHTML = `
+      <div class="skeleton-spinner"></div>
+      <span>Página ${i}</span>
+    `
+    
+    pageDiv.appendChild(canvas)
+    pageDiv.appendChild(pageLoader)
+    pagesContainer.value.appendChild(pageDiv)
+  }
+  
+  setupIntersectionObserver()
+}
+
 const setupIntersectionObserver = () => {
-  const observer = new IntersectionObserver((entries) => {
+  currentObserver = new IntersectionObserver((entries) => {
     entries.forEach(async (entry) => {
       const pageWrapper = entry.target as HTMLElement
       const pageNum = parseInt(pageWrapper.dataset.pageNumber || '1')
@@ -134,7 +225,6 @@ const setupIntersectionObserver = () => {
       if (entry.isIntersecting) {
         currentPage.value = pageNum
         
-        // Carga perezosa
         if (pageWrapper.dataset.rendered === 'false') {
           pageWrapper.dataset.rendered = 'rendering'
           
@@ -161,11 +251,11 @@ const setupIntersectionObserver = () => {
     })
   }, {
     root: scrollContainer.value,
-    threshold: 0.05,
-    rootMargin: '400px 0px'
+    threshold: 0.01,
+    rootMargin: '600px 0px'
   })
 
-  document.querySelectorAll('.pdf-page-wrapper').forEach(p => observer.observe(p))
+  pagesContainer.value?.querySelectorAll('.pdf-page-wrapper').forEach(p => currentObserver!.observe(p))
 }
 
 const jumpToPage = (pageNum: number) => {
@@ -238,7 +328,7 @@ watch(() => props.documento, () => {
   renderPDF()
 }, { immediate: true })
 
-watch(zoomLevel, renderPDF)
+watch(zoomLevel, reRenderPages)
 </script>
 
 <template>
@@ -332,10 +422,29 @@ watch(zoomLevel, renderPDF)
 
       <!-- VISOR PDF -->
       <main ref="scrollContainer" class="flex-1 bg-slate-200 dark:bg-slate-950 overflow-y-auto flex flex-col items-center py-12 relative scroll-smooth bg-gradient-to-br from-slate-200/50 to-slate-300/50 dark:from-slate-950 dark:to-slate-900 custom-scrollbar">
-        <div v-if="isRendering" class="absolute inset-0 z-50 bg-slate-100/60 dark:bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center">
-          <div class="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
-          <p class="text-[0.65rem] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.3em]">Visor de Seguridad Activo</p>
+        <!-- Overlay de descarga con progreso real -->
+        <div v-if="isRendering" class="absolute inset-0 z-50 bg-slate-100/80 dark:bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-slate-600 dark:text-slate-300">
+          <div class="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center mb-5 border border-slate-200 dark:border-slate-700">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500 animate-pulse"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <p class="text-xs font-black tracking-widest uppercase mb-4">Cargando Documento</p>
+          
+          <div class="w-64 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              v-if="downloadProgress >= 0"
+              class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300 ease-out"
+              :style="{ width: downloadProgress + '%' }"
+            ></div>
+            <div 
+              v-else
+              class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full animate-indeterminate"
+            ></div>
+          </div>
+          <p class="text-[0.7rem] font-bold mt-2 text-slate-400">
+            {{ downloadProgress >= 0 ? downloadProgress + '%' : 'Procesando...' }}
+          </p>
         </div>
+
         <div ref="pagesContainer" class="flex flex-col items-center gap-10 drop-shadow-2xl"></div>
       </main>
     </div>
@@ -393,6 +502,16 @@ watch(zoomLevel, renderPDF)
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.animate-indeterminate {
+  width: 40%;
+  animation: indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
 }
 
 .custom-scrollbar::-webkit-scrollbar {
