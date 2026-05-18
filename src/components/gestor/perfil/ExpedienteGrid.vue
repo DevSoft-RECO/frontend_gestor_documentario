@@ -211,12 +211,33 @@ const resetFilters = () => {
 
 /* --- PANEL DE CONTROL Y NAVEGACIÓN --- */
 .archive-control-panel {
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(145deg, #ffffff 0%, #f0f4f8 100%);
+  border: 1.5px solid #cbd5e1;
   border-radius: 24px;
   padding: 1.5rem 2rem;
   margin-bottom: 3rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.06),
+    0 10px 25px -5px rgba(15, 23, 42, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.archive-control-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0ea5e9, #6366f1, #0ea5e9);
+  background-size: 200% 100%;
+  animation: shimmer-bar 4s ease infinite;
+}
+
+@keyframes shimmer-bar {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .control-grid {
@@ -251,8 +272,8 @@ const resetFilters = () => {
 
 .premium-select, .premium-search-input {
   width: 100%;
-  background: white;
-  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  border: 1.5px solid #94a3b8;
   border-radius: 14px;
   padding: 0.8rem 1.2rem;
   font-size: 0.9rem;
@@ -260,7 +281,7 @@ const resetFilters = () => {
   color: #1e293b;
   outline: none;
   transition: all 0.3s;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .premium-select {
@@ -303,12 +324,12 @@ const resetFilters = () => {
 
 /* --- ESTADOS VACÍOS Y SIN COINCIDENCIAS --- */
 .empty-state, .no-results-state {
-  background: white;
+  background: linear-gradient(160deg, #ffffff 0%, #f1f5f9 100%);
   border-radius: 28px;
-  border: 1px dashed #cbd5e1;
+  border: 2px dashed #94a3b8;
   padding: 5rem 2rem;
   text-align: center;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.06);
 }
 
 .empty-icon-wrapper {
@@ -385,14 +406,14 @@ const resetFilters = () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: linear-gradient(135deg, #475569 0%, #334155 100%); /* Color Fólder Colgante Clásico */
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   color: white;
   padding: 0.65rem 1.75rem 0.5rem 1.75rem;
   border-radius: 12px 12px 0 0;
   font-family: 'Outfit', sans-serif;
   box-shadow: 
-    0 -4px 10px rgba(0,0,0,0.03),
-    inset 0 1px 0 rgba(255,255,255,0.15);
+    0 -4px 15px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.1);
   margin-left: 2rem;
   z-index: 10;
 }
@@ -409,23 +430,24 @@ const resetFilters = () => {
 .tab-badge {
   font-size: 0.65rem;
   font-weight: 900;
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(99, 102, 241, 0.2));
   color: #38bdf8;
-  padding: 0.15rem 0.6rem;
+  padding: 0.2rem 0.7rem;
   border-radius: 6px;
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.35);
 }
 
 /* Cuerpo de la Carpeta Manila Colgante */
 .folder-body-card {
   position: relative;
-  background: #fdfaf2; /* Color Cartón Manila Elegante */
-  border: 2px solid #eadecb;
+  background: linear-gradient(160deg, #fdfaf2 0%, #f5edd8 100%);
+  border: 2px solid #d4c4a8;
   border-radius: 24px;
   padding: 2.25rem 2.25rem;
   box-shadow: 
-    0 15px 35px -10px rgba(139, 92, 26, 0.06),
-    0 5px 15px rgba(0,0,0,0.02);
+    0 8px 16px -4px rgba(139, 92, 26, 0.1),
+    0 20px 40px -10px rgba(139, 92, 26, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   z-index: 5;
 }
 
@@ -436,7 +458,7 @@ const resetFilters = () => {
   bottom: 0;
   left: 0;
   width: 6px;
-  background: #d8c2a8;
+  background: linear-gradient(180deg, #c4a36e, #a0845c, #c4a36e);
   border-radius: 24px 0 0 24px;
 }
 
@@ -462,15 +484,17 @@ const resetFilters = () => {
 /* --- TARJETA HOJA DE PAPEL (Document Sheet) --- */
 .doc-sheet-card {
   position: relative;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.015);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 6px 18px -4px rgba(15, 23, 42, 0.08);
 }
 
 /* Decorador de Clip Metálico de Sujeción */
@@ -478,24 +502,26 @@ const resetFilters = () => {
   position: absolute;
   top: -8px;
   right: 1.5rem;
-  color: #94a3b8;
+  color: #64748b;
   z-index: 10;
   transform: rotate(-15deg);
   transition: all 0.3s;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
 }
 
 .doc-sheet-card:hover .paperclip-decorator {
   color: #0ea5e9;
   transform: rotate(5deg) scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(14, 165, 233, 0.3));
 }
 
 /* Efecto de sacar la hoja de papel del folder */
 .doc-sheet-card:hover {
   transform: translateY(-10px) rotate(0.5deg);
   box-shadow: 
-    0 25px 45px -15px rgba(15, 23, 42, 0.15),
-    0 10px 20px -10px rgba(15, 23, 42, 0.1);
-  border-color: #bae6fd;
+    0 25px 50px -12px rgba(15, 23, 42, 0.18),
+    0 12px 24px -8px rgba(14, 165, 233, 0.1);
+  border-color: #7dd3fc;
 }
 
 .doc-sheet-body {
@@ -511,19 +537,28 @@ const resetFilters = () => {
 }
 
 .sheet-tag {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  color: #94a3b8;
+  color: white;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #475569, #334155);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
 }
 
 .sheet-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   background: #10b981;
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), 0 0 8px rgba(16, 185, 129, 0.4);
+  animation: pulse-status 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-status {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), 0 0 8px rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.08), 0 0 12px rgba(16, 185, 129, 0.6); }
 }
 
 .sheet-title {
@@ -562,16 +597,17 @@ const resetFilters = () => {
   justify-content: space-between;
   font-size: 0.8rem;
   font-weight: 800;
-  color: #64748b;
+  color: #475569;
   padding: 1rem 1.5rem;
-  background: #f8fafc;
-  border-top: 1px dashed #e2e8f0;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-top: 1.5px dashed #cbd5e1;
   transition: all 0.3s;
 }
 
 .doc-sheet-card:hover .sheet-action {
-  background: #0ea5e9;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
+  border-top-color: transparent;
 }
 
 /* --- DARK MODE SUPPORT --- */
@@ -614,8 +650,8 @@ const resetFilters = () => {
 }
 
 :root.dark .hanging-folder-tab {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 :root.dark .folder-body-card {
@@ -631,6 +667,12 @@ const resetFilters = () => {
 :root.dark .doc-sheet-card {
   background: #0f172a;
   border-color: #243249;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+:root.dark .sheet-tag {
+  background: linear-gradient(135deg, #334155, #1e293b);
+  color: #94a3b8;
 }
 
 :root.dark .doc-sheet-card:hover {
