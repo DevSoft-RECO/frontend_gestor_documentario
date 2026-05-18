@@ -105,9 +105,13 @@ const saveCategoria = async () => {
     : `${API_URL}/api/gestor/categorias`
 
   try {
+    const token = sessionStorage.getItem('access_token')
     await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(formCategoria.value)
     })
     showModalCategoria.value = false
@@ -154,9 +158,13 @@ const saveSubcategoria = async () => {
 
 const toggleEstadoCategoria = async (cat: Categoria) => {
   try {
+    const token = sessionStorage.getItem('access_token')
     await fetch(`${API_URL}/api/gestor/categorias/${cat.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ ...cat, estado: !cat.estado })
     })
     fetchCategorias()
@@ -167,9 +175,13 @@ const toggleEstadoCategoria = async (cat: Categoria) => {
 
 const toggleEstadoSubcategoria = async (sub: Subcategoria) => {
   try {
+    const token = sessionStorage.getItem('access_token')
     await fetch(`${API_URL}/api/gestor/subcategorias/${sub.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ ...sub, estado: !sub.estado })
     })
     fetchCategorias()
