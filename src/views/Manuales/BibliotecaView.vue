@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
@@ -32,7 +31,6 @@ interface Categoria {
   subcategorias: Subcategoria[]
 }
 
-const authStore = useAuthStore()
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const biblioteca = ref<Categoria[]>([])
