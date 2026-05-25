@@ -59,6 +59,15 @@ const routes: RouteRecordRaw[] = [
                 }
             },
             {
+                path: 'gestor/admin/asociados',
+                name: 'gestor-admin-asociados',
+                component: () => import('@/views/GestorDocumental/Asociados/AdminAsociadosView.vue'),
+                meta: {
+                    title: 'Administrar Portafolios',
+                    role: 'Super Admin'
+                }
+            },
+            {
                 path: 'gestor/buscador',
                 name: 'gestor-buscador',
                 component: BuscadorView,
