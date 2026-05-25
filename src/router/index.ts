@@ -12,6 +12,8 @@ import CategoriasView from '@/views/GestorDocumental/Categorias/CategoriasView.v
 import BuscadorView from '@/views/GestorDocumental/Asociados/BuscadorView.vue'
 import PerfilView from '@/views/GestorDocumental/Asociados/PerfilView.vue'
 import DocumentoBusquedaView from '@/views/GestorDocumental/Busqueda/DocumentoBusquedaView.vue'
+import BibliotecaView from '@/views/Manuales/BibliotecaView.vue'
+import AdminManualesView from '@/views/Manuales/AdminManualesView.vue'
 
 const routes: RouteRecordRaw[] = [
     // 1. RUTAS PÚBLICAS
@@ -80,6 +82,23 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: 'Buscador por Número Físico',
                     permission: 'buscar_docuemntos'
+                }
+            },
+            {
+                path: 'manuales/biblioteca',
+                name: 'manuales-biblioteca',
+                component: BibliotecaView,
+                meta: {
+                    title: 'Biblioteca de Manuales'
+                }
+            },
+            {
+                path: 'manuales/configuracion',
+                name: 'manuales-configuracion',
+                component: AdminManualesView,
+                meta: {
+                    title: 'Configuración de Manuales',
+                    permission: 'admin_biblioteca'
                 }
             }
         ]
