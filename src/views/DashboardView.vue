@@ -149,6 +149,103 @@
           </div>
         </div>
       </div>
+
+      <!-- SEPARATOR FOR MANUALS SECTION -->
+      <div class="pt-6 border-t border-slate-200 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-violet-600 dark:text-violet-400">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+              Biblioteca de Manuales & Documentación
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Analíticas de volumen y distribución de manuales en la plataforma
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUALS KPI CARDS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div v-for="(kpi, i) in manualKpis" :key="i"
+             class="group relative overflow-hidden rounded-2xl border p-5 transition-all hover:scale-[1.02] hover:shadow-xl cursor-default"
+             :class="kpi.border">
+          <div class="absolute top-0 right-0 w-20 h-20 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity" :class="kpi.glow"></div>
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-inner" :class="kpi.iconBg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+          </div>
+          <p class="text-2xl font-black tracking-tight" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
+          <p class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">{{ kpi.label }}</p>
+        </div>
+      </div>
+
+      <!-- MANUALS BOTTOM SECTION: Category Distribution & Recent Manuals -->
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <!-- Manuals Category Distribution List / Bar Breakdown (Left 2 cols) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+          <div class="mb-6">
+            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Manuales por Categoría</h3>
+            <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de biblioteca de manuales</p>
+          </div>
+          <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+            <div v-for="(cat, i) in stats.manuales_por_categoria" :key="i" class="space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                <span class="truncate max-w-[170px]">{{ cat.nombre }}</span>
+                <span class="font-black text-slate-900 dark:text-white">{{ cat.total }}</span>
+              </div>
+              <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500"
+                     :style="{
+                       width: `${(cat.total / (stats.total_manuales || 1)) * 100}%`,
+                       backgroundColor: donutColors[i % donutColors.length]
+                     }">
+                </div>
+              </div>
+            </div>
+            <div v-if="!stats.manuales_por_categoria?.length" class="py-16 text-center text-slate-400">
+              <p class="text-xs font-bold">Sin categorías registradas</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Manuals Uploads List (Right 3 cols) -->
+        <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-600 dark:text-emerald-400">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Manuales Recientes</h3>
+            </div>
+            <span class="text-[0.6rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">ÚLTIMOS 5</span>
+          </div>
+          <div class="divide-y divide-slate-100 dark:divide-slate-800">
+            <div v-for="(item, i) in stats.manuales_recientes" :key="i"
+                 class="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+              <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs font-black shrink-0">
+                M
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.titulo }}</p>
+                <p class="text-[0.6rem] text-slate-400 mt-0.5">
+                  Subido por <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.usuario_nombre }}</span> · Subcategoría: <span class="font-semibold text-sky-600 dark:text-sky-400">{{ item.subcategoria }}</span>
+                </p>
+              </div>
+              <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_creacion) }}</span>
+            </div>
+            <div v-if="!stats.manuales_recientes?.length" class="py-16 text-center text-slate-400">
+              <p class="text-xs font-bold">Sin manuales cargados</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -171,6 +268,13 @@ interface Stats {
   documentos_por_categoria: { nombre: string; total: number }[]
   actividad_reciente: { etiqueta: string; tipo_movimiento: string; fecha_operacion: string; usuario_nombre: string; asociado_nombre: string }[]
   alertas_vencimiento: { etiqueta: string; numero_documento: string | null; fecha_vencimiento: string; asociado_nombre: string; subcategoria: string }[]
+  // Nuevos campos
+  total_manuales: number
+  total_categorias_manuales: number
+  total_paginas_manuales: number
+  manuales_creados_mes: number
+  manuales_por_categoria: { nombre: string; total: number }[]
+  manuales_recientes: { titulo: string; fecha_creacion: string; usuario_nombre: string; subcategoria: string }[]
 }
 
 const stats = ref<Stats | null>(null)
@@ -247,6 +351,52 @@ const kpis = computed(() => {
       label: 'Operaciones del Mes',
       value: stats.value.operaciones_mes,
       icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+      iconBg: 'bg-rose-50 dark:bg-rose-900/20',
+      iconColor: 'text-rose-600 dark:text-rose-400',
+      valueColor: 'text-rose-700 dark:text-rose-300',
+      border: 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
+      glow: 'bg-rose-500'
+    }
+  ]
+})
+
+const manualKpis = computed(() => {
+  if (!stats.value) return []
+  return [
+    {
+      label: 'Manuales Totales',
+      value: stats.value.total_manuales || 0,
+      icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+      iconBg: 'bg-violet-50 dark:bg-violet-900/20',
+      iconColor: 'text-violet-600 dark:text-violet-400',
+      valueColor: 'text-violet-700 dark:text-violet-300',
+      border: 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
+      glow: 'bg-violet-500'
+    },
+    {
+      label: 'Total de Páginas',
+      value: stats.value.total_paginas_manuales || 0,
+      icon: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+      iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-700 dark:text-emerald-300',
+      border: 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
+      glow: 'bg-emerald-500'
+    },
+    {
+      label: 'Categorías Manuales',
+      value: stats.value.total_categorias_manuales || 0,
+      icon: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+      iconBg: 'bg-cyan-50 dark:bg-cyan-900/20',
+      iconColor: 'text-cyan-600 dark:text-cyan-400',
+      valueColor: 'text-cyan-700 dark:text-cyan-300',
+      border: 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
+      glow: 'bg-cyan-500'
+    },
+    {
+      label: 'Cargas del Mes',
+      value: stats.value.manuales_creados_mes || 0,
+      icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
       iconBg: 'bg-rose-50 dark:bg-rose-900/20',
       iconColor: 'text-rose-600 dark:text-rose-400',
       valueColor: 'text-rose-700 dark:text-rose-300',
