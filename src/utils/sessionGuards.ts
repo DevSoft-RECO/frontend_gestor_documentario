@@ -1,21 +1,6 @@
-import api from '../api/axios';
 import Swal from 'sweetalert2';
 
 export const startSessionGuards = () => {
-    // ----------------------------------------------------
-    // REGLA A: EL "HEARTBEAT" CADA 5 MINUTOS (Vigilante)
-    // ----------------------------------------------------
-    setInterval(() => {
-        const token = sessionStorage.getItem('access_token');
-        if (token) {
-            // Un sub-proceso silencioso a la Madre.
-            const motherApiUrl = import.meta.env.VITE_MOTHER_API_URL || 'http://localhost:8000';
-            // Usamos el cliente api local pero apuntando a la madre para verificar sesión
-            api.get(`${motherApiUrl}/api/me`)
-                .catch(() => console.log('El heartbeat detectó sesión caída.'));
-        }
-    }, 5 * 60 * 1000);
-
     // ----------------------------------------------------
     // REGLA B: AVISO CORTÉS DE CIERRE DE JORNADA (17:50 hrs)
     // ----------------------------------------------------
@@ -39,3 +24,4 @@ export const startSessionGuards = () => {
         }, msUntilAlert);
     }
 };
+
