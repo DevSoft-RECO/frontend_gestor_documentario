@@ -195,12 +195,28 @@ export const useAuthStore = defineStore('auth', () => {
                 showInactivityModal.value = true
                 startLocalCountdown()
             })
+            .listen('.SessionRenewed', (e: any) => {
+                if (inactivitySessionId.value === e.sessionId) {
+                    showInactivityModal.value = false
+                    stopLocalCountdown()
+                }
+            })
             .listen('.SessionForceClosed', () => {
                 stopLocalCountdown()
                 disconnectSessionSocket()
                 AuthService.logoutLocal()
                 const motherAppUrl = import.meta.env.VITE_MOTHER_APP_URL || 'http://localhost:5173'
                 window.location.href = `${motherAppUrl}/login?session_expired=true`
+            })
+            .error((error: any) => {
+                console.warn('Error de autorización en canal de sockets:', error)
+                if (error && (error.status === 401 || error.status === 403)) {
+                    stopLocalCountdown()
+                    disconnectSessionSocket()
+                    AuthService.logoutLocal()
+                    const motherAppUrl = import.meta.env.VITE_MOTHER_APP_URL || 'http://localhost:5173'
+                    window.location.href = `${motherAppUrl}/login?session_expired=true`
+                }
             })
     }
 
