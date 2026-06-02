@@ -13,6 +13,18 @@ interface Puesto {
   nombre: string
 }
 
+interface Actualizacion {
+  id: number
+  manual_documento_id: number
+  numero_acta: string
+  fecha_aprobacion?: string
+  fecha_vigencia?: string
+  descripcion?: string
+  file_path: string
+  total_paginas: number
+  fecha_creacion: string
+}
+
 interface Manual {
   id: number
   manual_subcategoria_id: number
@@ -28,6 +40,10 @@ interface Manual {
       nombre: string
     }
   }
+  numero_acta?: string
+  fecha_aprobacion?: string
+  fecha_vigencia?: string
+  actualizaciones?: Actualizacion[]
 }
 
 interface Subcategoria {
@@ -58,6 +74,20 @@ const activeTab = ref<'manuales' | 'categorias'>('manuales')
 const showCreateManualModal = ref(false)
 const showCatModal = ref(false)
 const showSubcatModal = ref(false)
+const showUpdateUploadModal = ref(false)
+const isSubmittingUpdate = ref(false)
+const updateForm = ref({
+  manualId: null as number | null,
+  numeroActa: '',
+  fechaAprobacion: '',
+  fechaVigencia: '',
+  descripcion: '',
+  fileOriginal: null as File | null,
+  fileActualizacion: null as File | null
+})
+
+// Modo activo del visor de PDF ('original' o el ID de la actualización)
+const activeViewerMode = ref<'original' | number>('original')
 
 // Estado del formulario de Manuales
 const isSubmittingManual = ref(false)
@@ -67,7 +97,10 @@ const manualForm = ref({
   categoriaId: '',
   subcategoriaId: '',
   file: null as File | null,
-  puestosAutorizadosIds: [] as number[]
+  puestosAutorizadosIds: [] as number[],
+  numeroActa: '',
+  fechaAprobacion: '',
+  fechaVigencia: ''
 })
 
 // Estado del formulario de Categorías
@@ -152,19 +185,30 @@ const openCreateManual = () => {
     categoriaId: '',
     subcategoriaId: '',
     file: null,
-    puestosAutorizadosIds: []
+    puestosAutorizadosIds: [],
+    numeroActa: '',
+    fechaAprobacion: '',
+    fechaVigencia: ''
   }
   showCreateManualModal.value = true
 }
 
 const editManual = (doc: Manual) => {
+  const formatDateForInput = (dateStr?: string) => {
+    if (!dateStr) return ''
+    return dateStr.substring(0, 10)
+  }
+
   manualForm.value = {
     id: doc.id,
     titulo: doc.titulo,
     categoriaId: doc.subcategoria?.categoria?.id?.toString() || '',
     subcategoriaId: doc.manual_subcategoria_id.toString(),
     file: null, // No cargamos archivo por defecto a menos que lo deseen cambiar
-    puestosAutorizadosIds: doc.puestos_autorizados?.map(p => p.id) || []
+    puestosAutorizadosIds: doc.puestos_autorizados?.map(p => p.id) || [],
+    numeroActa: doc.numero_acta || '',
+    fechaAprobacion: formatDateForInput(doc.fecha_aprobacion),
+    fechaVigencia: formatDateForInput(doc.fecha_vigencia)
   }
   showCreateManualModal.value = true
 }
@@ -196,6 +240,9 @@ const saveManual = async () => {
   formData.append('titulo', manualForm.value.titulo)
   formData.append('subcategoria_id', manualForm.value.subcategoriaId)
   formData.append('puestos_autorizados', manualForm.value.puestosAutorizadosIds.join(','))
+  formData.append('numero_acta', manualForm.value.numeroActa)
+  formData.append('fecha_aprobacion', manualForm.value.fechaAprobacion)
+  formData.append('fecha_vigencia', manualForm.value.fechaVigencia)
   
   if (manualForm.value.file) {
     formData.append('documento', manualForm.value.file)
@@ -387,8 +434,12 @@ const renderPDF = async () => {
   try {
     const token = sessionStorage.getItem('access_token')
     
-    // 1. Obtener la URL firmada del backend
-    const resUrl = await fetch(`${API_URL}/api/manuales/documentos/${selectedManual.value.id}/url`, {
+    // 1. Obtener la URL firmada del backend (Alternando entre el manual principal y las hojas de actualización)
+    const urlEndpoint = activeViewerMode.value === 'original'
+      ? `${API_URL}/api/manuales/documentos/${selectedManual.value.id}/url`
+      : `${API_URL}/api/manuales/actualizaciones/${activeViewerMode.value}/url`
+
+    const resUrl = await fetch(urlEndpoint, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     if (!resUrl.ok) throw new Error("No autorizado o vencido")
@@ -529,6 +580,7 @@ const jumpToPage = (pageNum: number) => {
 
 const openManual = (manual: Manual) => {
   selectedManual.value = manual
+  activeViewerMode.value = 'original'
   showViewer.value = true
 }
 
@@ -537,6 +589,89 @@ const closeViewer = () => {
   selectedManual.value = null
   pdfDoc = null
   if (currentObserver) currentObserver.disconnect()
+}
+
+const openUploadUpdate = (manualId: number) => {
+  updateForm.value = {
+    manualId,
+    numeroActa: '',
+    fechaAprobacion: '',
+    fechaVigencia: '',
+    descripcion: '',
+    fileOriginal: null,
+    fileActualizacion: null
+  }
+  showUpdateUploadModal.value = true
+}
+
+const handleOriginalFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    updateForm.value.fileOriginal = target.files[0]
+  }
+}
+
+const handleActualizacionFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    updateForm.value.fileActualizacion = target.files[0]
+  }
+}
+
+const saveUpdate = async () => {
+  if (updateForm.value.numeroActa.trim() === '' || !updateForm.value.fileOriginal || !updateForm.value.fileActualizacion) {
+    alert('Por favor completa el número de acta y selecciona ambos archivos PDF (el manual completo consolidado y las hojas de cambio).')
+    return
+  }
+
+  isSubmittingUpdate.value = true
+  const formData = new FormData()
+  formData.append('numero_acta', updateForm.value.numeroActa)
+  formData.append('fecha_aprobacion', updateForm.value.fechaAprobacion)
+  formData.append('fecha_vigencia', updateForm.value.fechaVigencia)
+  formData.append('descripcion', updateForm.value.descripcion)
+  formData.append('documento_original', updateForm.value.fileOriginal)
+  formData.append('documento', updateForm.value.fileActualizacion)
+
+  const token = sessionStorage.getItem('access_token') || ''
+  const url = `${API_URL}/api/manuales/documentos/${updateForm.value.manualId}/actualizaciones`
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    })
+
+    if (res.ok) {
+      showUpdateUploadModal.value = false
+      loadAllData()
+    } else {
+      const err = await res.json()
+      alert(`Error al guardar actualización: ${err.error || err.detalle}`)
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isSubmittingUpdate.value = false
+  }
+}
+
+const deleteUpdate = async (updateId: number) => {
+  if (!confirm('¿Estás seguro de eliminar esta hoja de actualización? Esta acción no se puede deshacer.')) return
+  try {
+    const res = await fetch(`${API_URL}/api/manuales/actualizaciones/${updateId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    })
+    if (res.ok) {
+      loadAllData()
+    } else {
+      alert('Error al eliminar la actualización')
+    }
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 watch(zoomLevel, () => {
@@ -550,6 +685,33 @@ watch(showViewer, (isOpen) => {
     })
   }
 })
+
+watch(activeViewerMode, () => {
+  renderPDF()
+})
+
+const getVigenciaStatus = (manual: Manual) => {
+  return { 
+    label: 'Vigente', 
+    class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10' 
+  }
+}
+
+const getLatestActiveUpdate = (doc: Manual) => {
+  if (!doc.actualizaciones || doc.actualizaciones.length === 0) return null
+  const activeUpdates = doc.actualizaciones.filter(u => !!u.file_path)
+  if (activeUpdates.length === 0) return null
+  return [...activeUpdates].sort((a, b) => b.id - a.id)[0]
+}
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return 'N/A'
+  const date = new Date(dateStr)
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  return `${day}/${month}/${year}`
+}
 
 onMounted(() => {
   // Proteger la vista a nivel de código
@@ -637,9 +799,37 @@ onMounted(() => {
                   <td class="p-4 font-bold text-slate-800 dark:text-slate-200">
                     <div class="flex items-center gap-3">
                       <span class="text-red-500 text-lg">📄</span>
-                      <div>
-                        <p class="font-extrabold">{{ doc.titulo }}</p>
-                        <p class="text-[0.6rem] text-slate-400 font-mono truncate max-w-[200px]">{{ doc.file_path }}</p>
+                      <div class="space-y-1 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <p class="font-extrabold text-sm">{{ doc.titulo }}</p>
+                          <span :class="['px-2 py-0.5 rounded font-black text-[0.55rem] uppercase tracking-wider', getVigenciaStatus(doc).class]">
+                            {{ getVigenciaStatus(doc).label }}
+                          </span>
+                        </div>
+                        <div class="flex items-center gap-3 text-[0.65rem] text-slate-400 font-semibold flex-wrap">
+                          <span v-if="doc.numero_acta" class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">📜 Acta: {{ doc.numero_acta }}</span>
+                          <span v-if="doc.fecha_aprobacion">📅 Aprobación: {{ formatDate(doc.fecha_aprobacion) }}</span>
+                          <span v-if="doc.fecha_vigencia">⏳ Vigencia: {{ formatDate(doc.fecha_vigencia) }}</span>
+                        </div>
+                        <p class="text-[0.6rem] text-slate-400 font-mono truncate max-w-[250px]">{{ doc.file_path }}</p>
+                        
+                        <!-- Listado de la Última Hoja de Actualización Versionada Activa (Solo la última con archivo) -->
+                        <div v-if="getLatestActiveUpdate(doc)" class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                          <p class="text-[0.55rem] font-black text-slate-400 uppercase tracking-wider">🔄 Última Hoja de Cambio Activa:</p>
+                          <div v-for="upd in [getLatestActiveUpdate(doc)].filter(Boolean) as Actualizacion[]" :key="upd.id" class="flex flex-col gap-1 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-150 dark:border-slate-850">
+                            <div class="flex items-center gap-3 text-[0.65rem] text-slate-600 dark:text-slate-350">
+                              <span class="font-bold text-slate-800 dark:text-slate-200">📜 Acta: {{ upd.numero_acta }}</span>
+                              <span v-if="upd.fecha_aprobacion">📅 Aprob: {{ formatDate(upd.fecha_aprobacion) }}</span>
+                              <span v-if="upd.fecha_vigencia" class="px-1.5 py-0.5 rounded text-[0.55rem] font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10">⏳ Vigente desde: {{ formatDate(upd.fecha_vigencia) }}</span>
+                              <span v-if="upd.total_paginas > 0" class="font-mono text-slate-400 text-[0.6rem]">({{ upd.total_paginas }} págs)</span>
+                              <div class="ml-auto flex items-center gap-1.5">
+                                <button @click="openManual(doc); activeViewerMode = upd.id" class="text-[0.6rem] font-extrabold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/10 hover:bg-indigo-100 transition-colors">Ver Hojas 👁️</button>
+                                <button @click="deleteUpdate(upd.id)" class="text-[0.6rem] font-extrabold bg-red-50 dark:bg-red-950/20 text-red-500 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-900/10 hover:bg-red-100 transition-colors">Borrar 🗑️</button>
+                              </div>
+                            </div>
+                            <p v-if="upd.descripcion" class="text-[0.6rem] text-slate-500 dark:text-slate-400 italic mt-0.5 pl-1 leading-normal">📝 {{ upd.descripcion }}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -663,6 +853,7 @@ onMounted(() => {
                   <td class="p-4">
                     <div class="flex items-center justify-center gap-2">
                       <button @click="openManual(doc)" class="btn-action-view" title="Visualizar Manual">👁️</button>
+                      <button @click="openUploadUpdate(doc.id)" class="btn-action-update" title="Subir Hojas de Actualización">🔄</button>
                       <button @click="editManual(doc)" class="btn-action-edit" title="Editar Permisos">✏️</button>
                       <button @click="deleteManual(doc.id)" class="btn-action-delete" title="Eliminar Manual">🗑️</button>
                     </div>
@@ -768,6 +959,35 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- Nuevos Campos: No. Acta, Fecha Aprobación y Fecha Vigencia -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">No. Acta</label>
+              <input 
+                type="text" 
+                v-model="manualForm.numeroActa" 
+                placeholder="Ej: Acta 12-2026" 
+                class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Fecha Aprobación</label>
+              <input 
+                type="date" 
+                v-model="manualForm.fechaAprobacion" 
+                class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Fecha Vigencia</label>
+              <input 
+                type="date" 
+                v-model="manualForm.fechaVigencia" 
+                class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+          </div>
+
           <!-- Subida de PDF -->
           <div class="space-y-1.5">
             <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Archivo Físico (PDF)</label>
@@ -811,6 +1031,105 @@ onMounted(() => {
           <button @click="saveManual" :disabled="isSubmittingManual" class="btn-indigo">
             <span v-if="isSubmittingManual" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 inline-block"></span>
             <span>{{ isSubmittingManual ? 'Guardando...' : 'Confirmar Guardado' }}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MODAL: SUBIR HOJAS DE ACTUALIZACIÓN -->
+    <div v-if="showUpdateUploadModal" class="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+        
+        <!-- Header modal -->
+        <div class="p-6 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+          <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">🔄 Subir Hojas de Actualización (Cambios)</h3>
+          <button @click="showUpdateUploadModal = false" class="text-2xl text-slate-400 hover:text-slate-650 transition-colors">×</button>
+        </div>
+
+        <!-- Body modal -->
+        <div class="p-6 space-y-6">
+          <p class="text-xs text-slate-500 dark:text-slate-400">Sube tanto el manual consolidado (completo) con los nuevos cambios aplicados, como el archivo que contenga únicamente las hojas que cambiaron en esta acta.</p>
+
+          <!-- No. Acta -->
+          <div class="space-y-1.5">
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">No. Acta de Aprobación</label>
+            <input 
+              type="text" 
+              v-model="updateForm.numeroActa" 
+              placeholder="Ej: Acta 14-2026" 
+              class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+
+          <!-- Fechas -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Fecha Aprobación</label>
+              <input 
+                type="date" 
+                v-model="updateForm.fechaAprobacion" 
+                class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+            
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Fecha Vigencia</label>
+              <input 
+                type="date" 
+                v-model="updateForm.fechaVigencia" 
+                class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+          </div>
+
+          <!-- Descripción del Cambio -->
+          <div class="space-y-1.5">
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Descripción del Cambio / Acta</label>
+            <textarea 
+              v-model="updateForm.descripcion" 
+              rows="3"
+              placeholder="Ej: Se modificaron las páginas 12, 14 y 15 referentes a las políticas de cobro por cajas..." 
+              class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+            ></textarea>
+          </div>
+
+          <!-- Dos Subidas de Archivo -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 1. PDF Completo Original (Actualizado) -->
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">1. PDF Completo Actualizado (Original)</label>
+              <label for="modalUpdateOriginalInput" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-800 p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:border-indigo-500 transition-all group">
+                <span class="text-xl">📄</span>
+                <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 text-center truncate max-w-[200px]" :title="updateForm.fileOriginal ? updateForm.fileOriginal.name : ''">
+                  {{ updateForm.fileOriginal ? updateForm.fileOriginal.name : 'Subir manual consolidado' }}
+                </span>
+              </label>
+              <input type="file" accept="application/pdf" @change="handleOriginalFileChange" hidden id="modalUpdateOriginalInput" />
+            </div>
+
+            <!-- 2. PDF de Hojas de Cambio -->
+            <div class="space-y-1.5">
+              <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">2. Solo Hojas de Cambio (PDF)</label>
+              <label for="modalUpdateChangesInput" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-800 p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-950/20 cursor-pointer hover:border-indigo-500 transition-all group">
+                <span class="text-xl">🔄</span>
+                <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 text-center truncate max-w-[200px]" :title="updateForm.fileActualizacion ? updateForm.fileActualizacion.name : ''">
+                  {{ updateForm.fileActualizacion ? updateForm.fileActualizacion.name : 'Subir solo hojas modificadas' }}
+                </span>
+              </label>
+              <input type="file" accept="application/pdf" @change="handleActualizacionFileChange" hidden id="modalUpdateChangesInput" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer modal -->
+        <div class="p-6 border-t border-slate-150 dark:border-slate-800 flex items-center justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50">
+          <button @click="showUpdateUploadModal = false" class="btn-slate">
+            <span>Cancelar</span>
+          </button>
+          <button @click="saveUpdate" :disabled="isSubmittingUpdate" class="btn-indigo">
+            <span v-if="isSubmittingUpdate" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 inline-block"></span>
+            <span>{{ isSubmittingUpdate ? 'Subiendo...' : 'Subir Actualización' }}</span>
           </button>
         </div>
 
@@ -890,8 +1209,34 @@ onMounted(() => {
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
             </div>
             <div>
-              <h3 class="m-0 text-[1rem] font-extrabold tracking-tight">{{ selectedManual.titulo }}</h3>
-              <p class="m-0 text-[0.65rem] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Modo Previsualización del Administrador</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="m-0 text-[1rem] font-extrabold tracking-tight">{{ selectedManual.titulo }}</h3>
+                <span :class="['px-2 py-0.5 rounded font-black text-[0.55rem] uppercase tracking-wider', getVigenciaStatus(selectedManual).class]">
+                  {{ getVigenciaStatus(selectedManual).label }}
+                </span>
+
+                <!-- Selector de Versión / Hojas de Cambio -->
+                <select 
+                  v-if="selectedManual.actualizaciones && selectedManual.actualizaciones.length > 0"
+                  v-model="activeViewerMode"
+                  class="ml-3 text-[0.65rem] font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 p-1.5 border border-indigo-200 dark:border-indigo-900 rounded-lg outline-none cursor-pointer"
+                >
+                  <option value="original">📄 Documento Original ({{ selectedManual.total_paginas }} págs)</option>
+                  <template v-for="upd in selectedManual.actualizaciones" :key="upd.id">
+                    <option 
+                      v-if="upd.file_path" 
+                      :value="upd.id"
+                    >
+                      🔄 Hojas de Cambio (Acta {{ upd.numero_acta }}) ({{ upd.total_paginas }} págs)
+                    </option>
+                  </template>
+                </select>
+              </div>
+              <div class="flex items-center gap-3 text-[0.65rem] text-slate-500 dark:text-slate-400 font-bold tracking-normal mt-0.5">
+                <span v-if="selectedManual.numero_acta" class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">📜 Acta: {{ selectedManual.numero_acta }}</span>
+                <span v-if="selectedManual.fecha_aprobacion">📅 Aprobación: {{ formatDate(selectedManual.fecha_aprobacion) }}</span>
+                <span v-if="selectedManual.fecha_vigencia">⏳ Vigencia: {{ formatDate(selectedManual.fecha_vigencia) }}</span>
+              </div>
             </div>
           </div>
           
@@ -924,23 +1269,64 @@ onMounted(() => {
         </header>
 
         <div class="flex-1 flex overflow-hidden">
-          <!-- INDICE RAPIDO LATERAL -->
-          <aside class="w-[280px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shadow-xl z-[100] p-6 overflow-y-auto custom-scrollbar">
-            <h4 class="text-[0.65rem] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Índice del Manual</h4>
-            <div class="space-y-1">
-              <button 
-                v-for="i in totalPaginas" 
-                :key="i"
-                @click="jumpToPage(i)"
-                :class="[
-                  'w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all',
-                  currentPage === i 
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                ]"
+          <!-- HISTORIAL DE CAMBIOS LATERAL (TIMELINE PREMIUM) -->
+          <aside class="w-[320px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shadow-xl z-[100] p-6 overflow-y-auto custom-scrollbar">
+            <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-850">
+              <span class="text-lg">📜</span>
+              <h4 class="text-[0.75rem] font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wider font-['Outfit']">Historial de Cambios</h4>
+            </div>
+
+            <!-- Si no hay actualizaciones -->
+            <div v-if="!selectedManual.actualizaciones || selectedManual.actualizaciones.length === 0" class="flex flex-col items-center justify-center py-16 text-center gap-3">
+              <span class="text-3xl">📭</span>
+              <h5 class="text-xs font-bold text-slate-700 dark:text-slate-350">Sin Cambios Posteriores</h5>
+              <p class="text-[0.65rem] text-slate-400 dark:text-slate-500 leading-normal">Este manual se mantiene en su versión original de publicación y no tiene actas de actualización cargadas.</p>
+            </div>
+
+            <!-- Listado de Actualizaciones en formato Timeline -->
+            <div v-else class="relative pl-4 border-l border-slate-200 dark:border-slate-800 space-y-6 my-2">
+              <div 
+                v-for="upd in [...(selectedManual.actualizaciones || [])].sort((a, b) => b.id - a.id)" 
+                :key="upd.id"
+                class="relative space-y-1.5"
               >
-                📄 Página {{ i }}
-              </button>
+                <!-- Punto en el Timeline -->
+                <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-slate-900" 
+                      :class="upd.file_path ? 'border-indigo-500 ring-4 ring-indigo-500/10' : 'border-slate-300 dark:border-slate-700'"></span>
+                
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[0.7rem] font-extrabold text-slate-850 dark:text-slate-100">📜 Acta {{ upd.numero_acta }}</span>
+                  <span v-if="upd.file_path" class="px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[0.55rem] font-bold select-none">Activo</span>
+                  <span v-else class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[0.55rem] font-bold select-none">Integrado</span>
+                </div>
+
+                <div class="flex flex-col gap-0.5 text-[0.6rem] text-slate-400 dark:text-slate-550 font-bold">
+                  <span v-if="upd.fecha_aprobacion">📅 Aprobación: {{ formatDate(upd.fecha_aprobacion) }}</span>
+                  <span v-if="upd.fecha_vigencia">⏳ Vigente desde: {{ formatDate(upd.fecha_vigencia) }}</span>
+                </div>
+
+                <p v-if="upd.descripcion" class="text-[0.62rem] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-100 dark:border-slate-850/30 leading-relaxed max-w-[260px] break-words">
+                  {{ upd.descripcion }}
+                </p>
+
+                <!-- Botón de Conmutación de PDF si tiene hojas físicas disponibles -->
+                <div v-if="upd.file_path" class="pt-1">
+                  <button 
+                    v-if="activeViewerMode === 'original'"
+                    @click="activeViewerMode = upd.id"
+                    class="w-full text-center px-2 py-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-lg text-[0.6rem] font-extrabold transition-colors border border-indigo-100/10"
+                  >
+                    👁️ Ver Hojas de Cambio
+                  </button>
+                  <button 
+                    v-else-if="activeViewerMode === upd.id"
+                    @click="activeViewerMode = 'original'"
+                    class="w-full text-center px-2 py-1.5 bg-slate-800 text-white hover:bg-slate-750 dark:bg-slate-700 rounded-lg text-[0.6rem] font-extrabold transition-colors"
+                  >
+                    📄 Volver al Manual Original
+                  </button>
+                </div>
+              </div>
             </div>
           </aside>
 
@@ -1033,7 +1419,7 @@ onMounted(() => {
   color: #f8fafc;
 }
 
-.btn-action-edit, .btn-action-delete {
+.btn-action-edit, .btn-action-delete, .btn-action-update {
   background: #f1f5f9;
   border: none;
   width: 28px;
@@ -1050,12 +1436,16 @@ onMounted(() => {
   background: #0ea5e9;
   color: white;
 }
+.btn-action-update:hover {
+  background: #10b981;
+  color: white;
+}
 .btn-action-delete:hover {
   background: #ef4444;
   color: white;
 }
 
-:root.dark .btn-action-edit, :root.dark .btn-action-delete {
+:root.dark .btn-action-edit, :root.dark .btn-action-delete, :root.dark .btn-action-update {
   background: #1e293b;
 }
 

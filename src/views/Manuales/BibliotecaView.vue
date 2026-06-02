@@ -6,6 +6,18 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 // Configurar el worker usando el archivo local de la biblioteca
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
+interface Actualizacion {
+  id: number
+  manual_documento_id: number
+  numero_acta: string
+  fecha_aprobacion?: string
+  fecha_vigencia?: string
+  descripcion?: string
+  file_path: string
+  total_paginas: number
+  fecha_creacion: string
+}
+
 interface Manual {
   id: number
   manual_subcategoria_id: number
@@ -14,6 +26,10 @@ interface Manual {
   total_paginas: number
   fecha_creacion: string
   ultima_actualizacion: string
+  numero_acta?: string
+  fecha_aprobacion?: string
+  fecha_vigencia?: string
+  actualizaciones?: Actualizacion[]
 }
 
 interface Subcategoria {
@@ -46,6 +62,9 @@ const totalPaginas = ref(0)
 const zoomLevel = ref(1.1)
 const isRendering = ref(false)
 const downloadProgress = ref(0)
+
+// Modo activo del visor de PDF ('original' o el ID de la actualización)
+const activeViewerMode = ref<'original' | number>('original')
 
 const pagesContainer = ref<HTMLElement | null>(null)
 const scrollContainer = ref<HTMLElement | null>(null)
@@ -89,11 +108,12 @@ const filteredBiblioteca = computed(() => {
       return cat
     }
 
-    // 3. Filtrar subcategorías e items con búsqueda difusa
     const subcats = cat.subcategorias.map(sub => {
       const docs = sub.documentos.filter(doc => 
         doc.titulo.toLowerCase().includes(query) || 
-        sub.nombre.toLowerCase().includes(query)
+        sub.nombre.toLowerCase().includes(query) ||
+        (doc.numero_acta && doc.numero_acta.toLowerCase().includes(query)) ||
+        (doc.actualizaciones && doc.actualizaciones.some(upd => upd.numero_acta.toLowerCase().includes(query)))
       )
       
       if (docs.length > 0) {
@@ -108,6 +128,29 @@ const filteredBiblioteca = computed(() => {
     return null
   }).filter(c => c !== null) as Categoria[]
 })
+
+const getVigenciaStatus = (manual: Manual) => {
+  return { 
+    label: 'Vigente', 
+    class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10' 
+  }
+}
+
+const getLatestActiveUpdate = (doc: Manual) => {
+  if (!doc.actualizaciones || doc.actualizaciones.length === 0) return null
+  const activeUpdates = doc.actualizaciones.filter(u => !!u.file_path)
+  if (activeUpdates.length === 0) return null
+  return [...activeUpdates].sort((a, b) => b.id - a.id)[0]
+}
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return 'N/A'
+  const date = new Date(dateStr)
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  return `${day}/${month}/${year}`
+}
 
 // --- LÓGICA ULTRA-OPTIMIZADA DE PDF.JS CON LAZY LOADING ---
 
@@ -158,8 +201,12 @@ const renderPDF = async () => {
   try {
     const token = sessionStorage.getItem('access_token')
     
-    // 1. Obtener la URL firmada del backend
-    const resUrl = await fetch(`${API_URL}/api/manuales/documentos/${selectedManual.value.id}/url`, {
+    // 1. Obtener la URL firmada del backend (Alternando entre el manual principal y las hojas de actualización)
+    const urlEndpoint = activeViewerMode.value === 'original'
+      ? `${API_URL}/api/manuales/documentos/${selectedManual.value.id}/url`
+      : `${API_URL}/api/manuales/actualizaciones/${activeViewerMode.value}/url`
+
+    const resUrl = await fetch(urlEndpoint, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     if (!resUrl.ok) throw new Error("No autorizado o vencido")
@@ -300,6 +347,7 @@ const jumpToPage = (pageNum: number) => {
 
 const openManual = (manual: Manual) => {
   selectedManual.value = manual
+  activeViewerMode.value = 'original'
   showViewer.value = true
 }
 
@@ -321,6 +369,10 @@ watch(showViewer, (isOpen) => {
       renderPDF()
     })
   }
+})
+
+watch(activeViewerMode, () => {
+  renderPDF()
 })
 
 onMounted(() => {
@@ -441,9 +493,37 @@ onMounted(() => {
                       <div class="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/20 transition-all group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-100 dark:group-hover:border-indigo-900/20">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       </div>
-                      <div class="min-w-0">
-                        <h4 class="text-[0.75rem] font-bold text-slate-800 dark:text-slate-100 mb-1 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400" :title="doc.titulo">{{ doc.titulo }}</h4>
-                        <p class="text-[0.6rem] text-slate-500 dark:text-slate-500 font-medium">Tamaño: <span class="font-bold">{{ doc.total_paginas }} págs</span></p>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                          <h4 class="text-[0.75rem] font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400" :title="doc.titulo">{{ doc.titulo }}</h4>
+                          <span :class="['px-1.5 py-0.5 rounded font-black text-[0.5rem] uppercase tracking-wider shrink-0', getVigenciaStatus(doc).class]">
+                            {{ getVigenciaStatus(doc).label }}
+                          </span>
+                        </div>
+                        <p class="text-[0.6rem] text-slate-500 dark:text-slate-500 font-medium mb-1">Tamaño: <span class="font-bold">{{ doc.total_paginas }} págs</span></p>
+                        <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6rem] text-slate-400 dark:text-slate-500">
+                          <span v-if="doc.numero_acta" class="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded font-bold">📜 {{ doc.numero_acta }}</span>
+                          <span v-if="doc.fecha_aprobacion">📅 Aprob: {{ formatDate(doc.fecha_aprobacion) }}</span>
+                          <span v-if="doc.fecha_vigencia">⏳ Vigencia: {{ formatDate(doc.fecha_vigencia) }}</span>
+                        </div>
+
+                        <!-- Mostrar solo la última actualización con archivo cargado (Última Hoja de Cambio Activa) en la tarjeta de la Biblioteca -->
+                        <div v-if="getLatestActiveUpdate(doc)" class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1" @click.stop>
+                          <p class="text-[0.55rem] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">🔄 Última Hoja de Cambio Activa:</p>
+                          <div 
+                            v-for="upd in [getLatestActiveUpdate(doc)].filter(Boolean) as Actualizacion[]" 
+                            :key="upd.id"
+                            @click="openManual(doc), activeViewerMode = upd.id"
+                            class="flex flex-col gap-0.5 text-[0.65rem] text-slate-500 bg-white dark:bg-slate-900/50 p-2 rounded border border-slate-150 dark:border-slate-800/80 cursor-pointer transition-all hover:border-indigo-300 dark:hover:border-indigo-900/50"
+                          >
+                            <div class="flex items-center gap-1.5 w-full">
+                              <span class="font-bold shrink-0 text-slate-700 dark:text-slate-350">📜 Acta: {{ upd.numero_acta }}</span>
+                              <span class="text-[0.55rem] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.2 rounded border border-indigo-100/10">Ver Hojas 👁️</span>
+                              <span v-if="upd.fecha_vigencia" class="px-1.5 py-0.2 rounded text-[0.55rem] font-bold ml-auto shrink-0 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10">⏳ Vigente</span>
+                            </div>
+                            <p v-if="upd.descripcion" class="text-[0.58rem] text-slate-400 dark:text-slate-500 italic mt-0.5 max-w-[250px] truncate leading-normal" :title="upd.descripcion">📝 {{ upd.descripcion }}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
@@ -477,8 +557,34 @@ onMounted(() => {
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
             </div>
             <div>
-              <h3 class="m-0 text-[1rem] font-extrabold tracking-tight">{{ selectedManual.titulo }}</h3>
-              <p class="m-0 text-[0.65rem] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Modo de Lectura e Inducción</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="m-0 text-[1rem] font-extrabold tracking-tight">{{ selectedManual.titulo }}</h3>
+                <span :class="['px-2 py-0.5 rounded font-black text-[0.55rem] uppercase tracking-wider', getVigenciaStatus(selectedManual).class]">
+                  {{ getVigenciaStatus(selectedManual).label }}
+                </span>
+
+                <!-- Selector de Versión / Hojas de Cambio -->
+                <select 
+                  v-if="selectedManual.actualizaciones && selectedManual.actualizaciones.length > 0"
+                  v-model="activeViewerMode"
+                  class="ml-3 text-[0.65rem] font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 p-1.5 border border-indigo-200 dark:border-indigo-900 rounded-lg outline-none cursor-pointer"
+                >
+                  <option value="original">📄 Documento Original ({{ selectedManual.total_paginas }} págs)</option>
+                  <template v-for="upd in selectedManual.actualizaciones" :key="upd.id">
+                    <option 
+                      v-if="upd.file_path" 
+                      :value="upd.id"
+                    >
+                      🔄 Hojas de Cambio (Acta {{ upd.numero_acta }}) ({{ upd.total_paginas }} págs)
+                    </option>
+                  </template>
+                </select>
+              </div>
+              <div class="flex items-center gap-3 text-[0.65rem] text-slate-500 dark:text-slate-400 font-bold tracking-normal mt-0.5">
+                <span v-if="selectedManual.numero_acta" class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">📜 Acta: {{ selectedManual.numero_acta }}</span>
+                <span v-if="selectedManual.fecha_aprobacion">📅 Aprobación: {{ formatDate(selectedManual.fecha_aprobacion) }}</span>
+                <span v-if="selectedManual.fecha_vigencia">⏳ Vigencia: {{ formatDate(selectedManual.fecha_vigencia) }}</span>
+              </div>
             </div>
           </div>
           
@@ -511,23 +617,64 @@ onMounted(() => {
         </header>
 
         <div class="flex-1 flex overflow-hidden">
-          <!-- INDICE RAPIDO LATERAL -->
-          <aside class="w-[280px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shadow-xl z-[100] p-6 overflow-y-auto custom-scrollbar">
-            <h4 class="text-[0.65rem] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Índice del Manual</h4>
-            <div class="space-y-1">
-              <button 
-                v-for="i in totalPaginas" 
-                :key="i"
-                @click="jumpToPage(i)"
-                :class="[
-                  'w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all',
-                  currentPage === i 
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                ]"
+          <!-- HISTORIAL DE CAMBIOS LATERAL (TIMELINE PREMIUM) -->
+          <aside class="w-[320px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shadow-xl z-[100] p-6 overflow-y-auto custom-scrollbar">
+            <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-850">
+              <span class="text-lg">📜</span>
+              <h4 class="text-[0.75rem] font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wider font-['Outfit']">Historial de Cambios</h4>
+            </div>
+
+            <!-- Si no hay actualizaciones -->
+            <div v-if="!selectedManual.actualizaciones || selectedManual.actualizaciones.length === 0" class="flex flex-col items-center justify-center py-16 text-center gap-3">
+              <span class="text-3xl">📭</span>
+              <h5 class="text-xs font-bold text-slate-700 dark:text-slate-350">Sin Cambios Posteriores</h5>
+              <p class="text-[0.65rem] text-slate-400 dark:text-slate-500 leading-normal">Este manual se mantiene en su versión original de publicación y no tiene actas de actualización cargadas.</p>
+            </div>
+
+            <!-- Listado de Actualizaciones en formato Timeline -->
+            <div v-else class="relative pl-4 border-l border-slate-200 dark:border-slate-800 space-y-6 my-2">
+              <div 
+                v-for="upd in [...(selectedManual.actualizaciones || [])].sort((a, b) => b.id - a.id)" 
+                :key="upd.id"
+                class="relative space-y-1.5"
               >
-                📄 Página {{ i }}
-              </button>
+                <!-- Punto en el Timeline -->
+                <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-slate-900" 
+                      :class="upd.file_path ? 'border-indigo-500 ring-4 ring-indigo-500/10' : 'border-slate-300 dark:border-slate-700'"></span>
+                
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[0.7rem] font-extrabold text-slate-850 dark:text-slate-100">📜 Acta {{ upd.numero_acta }}</span>
+                  <span v-if="upd.file_path" class="px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[0.55rem] font-bold select-none">Activo</span>
+                  <span v-else class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-550 text-[0.55rem] font-bold select-none">Integrado</span>
+                </div>
+
+                <div class="flex flex-col gap-0.5 text-[0.6rem] text-slate-400 dark:text-slate-500 font-bold">
+                  <span v-if="upd.fecha_aprobacion">📅 Aprobación: {{ formatDate(upd.fecha_aprobacion) }}</span>
+                  <span v-if="upd.fecha_vigencia">⏳ Vigente desde: {{ formatDate(upd.fecha_vigencia) }}</span>
+                </div>
+
+                <p v-if="upd.descripcion" class="text-[0.62rem] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-100 dark:border-slate-850/30 leading-relaxed max-w-[260px] break-words">
+                  {{ upd.descripcion }}
+                </p>
+
+                <!-- Botón de Conmutación de PDF si tiene hojas físicas disponibles -->
+                <div v-if="upd.file_path" class="pt-1">
+                  <button 
+                    v-if="activeViewerMode === 'original'"
+                    @click="activeViewerMode = upd.id"
+                    class="w-full text-center px-2 py-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-lg text-[0.6rem] font-extrabold transition-colors border border-indigo-100/10"
+                  >
+                    👁️ Ver Hojas de Cambio
+                  </button>
+                  <button 
+                    v-else-if="activeViewerMode === upd.id"
+                    @click="activeViewerMode = 'original'"
+                    class="w-full text-center px-2 py-1.5 bg-slate-800 text-white hover:bg-slate-750 dark:bg-slate-700 rounded-lg text-[0.6rem] font-extrabold transition-colors"
+                  >
+                    📄 Volver al Manual Original
+                  </button>
+                </div>
+              </div>
             </div>
           </aside>
 
