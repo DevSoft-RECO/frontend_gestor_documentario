@@ -283,10 +283,8 @@ const deleteUpdate = async (updateId: number) => {
 }
 
 const getVigenciaStatus = (manual: Manual) => {
-  // Leer propiedad para silenciar la advertencia de parámetro no usado
-  const _ = manual.id
   return { 
-    label: 'Vigente', 
+    label: manual.id ? 'Vigente' : 'Vigente', 
     class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10' 
   }
 }
