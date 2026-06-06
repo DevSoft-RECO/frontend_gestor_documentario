@@ -88,13 +88,18 @@ const uploadDocument = () => {
     return
   }
 
+  if (!uploadForm.value.numero_documento || !uploadForm.value.numero_documento.trim()) {
+    alert('Por favor ingresa el Número Físico.')
+    return
+  }
+
   // Despachar la carga en segundo plano al almacén Pinia
   uploadStore.uploadFile({
     file: uploadForm.value.file,
     asociadoId: props.asociadoId,
     subcategoriaId: uploadForm.value.subcategoria_id,
     etiqueta: uploadForm.value.etiqueta || undefined,
-    numeroDocumento: uploadForm.value.numero_documento || undefined,
+    numeroDocumento: uploadForm.value.numero_documento,
     fechaVencimiento: uploadForm.value.fecha_vencimiento || undefined
   })
 
@@ -164,11 +169,11 @@ const uploadDocument = () => {
 
             <div class="form-row">
               <div class="form-group">
-                <label>Número Físico</label>
-                <input type="text" v-model="uploadForm.numero_documento" class="custom-select" placeholder="Ej. A-123" />
+                <label>Número de documento<span style="color: #ef4444;">*</span></label>
+                <input type="text" v-model="uploadForm.numero_documento" class="custom-select" placeholder="Ej. A-123" required />
               </div>
               <div class="form-group">
-                <label>Vencimiento</label>
+                <label>Fecha de vencimiento</label>
                 <input type="date" v-model="uploadForm.fecha_vencimiento" class="custom-select" />
               </div>
             </div>
@@ -193,7 +198,7 @@ const uploadDocument = () => {
         <button 
           @click="uploadDocument" 
           class="btn-primary" 
-          :disabled="!uploadForm.file"
+          :disabled="!uploadForm.file || !uploadForm.numero_documento?.trim()"
         >
           Crear Fólder Maestro
         </button>
