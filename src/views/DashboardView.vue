@@ -96,9 +96,9 @@
                 {{ item.usuario_nombre?.charAt(0) || '?' }}
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.etiqueta }}</p>
+                <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.subcategoria }}</p>
                 <p class="text-[0.6rem] text-slate-400 mt-0.5">
-                  <span class="font-bold">{{ item.usuario_nombre }}</span> · {{ item.tipo_movimiento }} · {{ item.asociado_nombre }}
+                  <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.etiqueta }}</span> · <span class="font-bold">{{ item.usuario_nombre }}</span> · {{ item.tipo_movimiento }} · {{ item.asociado_nombre }}
                 </p>
               </div>
               <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_operacion) }}</span>
@@ -266,7 +266,7 @@ interface Stats {
   operaciones_mes: number
   documentos_por_mes: { mes: string; total: number }[]
   documentos_por_categoria: { nombre: string; total: number }[]
-  actividad_reciente: { etiqueta: string; tipo_movimiento: string; fecha_operacion: string; usuario_nombre: string; asociado_nombre: string }[]
+  actividad_reciente: { etiqueta: string; tipo_movimiento: string; fecha_operacion: string; usuario_nombre: string; asociado_nombre: string; subcategoria: string }[]
   alertas_vencimiento: { etiqueta: string; numero_documento: string | null; fecha_vencimiento: string; asociado_nombre: string; subcategoria: string }[]
   // Nuevos campos
   total_manuales: number
