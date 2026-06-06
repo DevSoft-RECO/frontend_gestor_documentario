@@ -49,7 +49,30 @@ const goToProfile = (id: number) => {
   router.push(`/admin/gestor/asociados/${id}`)
 }
 
+const openRegisterModal = () => {
+  form.value = {
+    nombre_completo: searchQuery.value,
+    dpi: '',
+    codigo_cliente: '',
+    direccion: ''
+  }
+  showModal.value = true
+}
+
 const registerAsociado = async () => {
+  if (!form.value.nombre_completo || !form.value.nombre_completo.trim()) {
+    alert('El Nombre Completo es obligatorio.')
+    return
+  }
+  if (!form.value.dpi || !form.value.dpi.trim()) {
+    alert('El Documento DPI es obligatorio.')
+    return
+  }
+  if (!form.value.codigo_cliente || !form.value.codigo_cliente.trim()) {
+    alert('El Código Cliente es obligatorio.')
+    return
+  }
+
   try {
     const token = sessionStorage.getItem('access_token')
     const res = await fetch(`${API_URL}/api/gestor/asociados`, {
@@ -127,7 +150,7 @@ const registerAsociado = async () => {
                 <div class="empty-anim">🔍</div>
                 <h3>Sin coincidencias</h3>
                 <p>No encontramos a este asociado en nuestra base de datos.</p>
-                <button @click="showModal = true" class="btn-premium">
+                <button @click="openRegisterModal" class="btn-premium">
                   <span>+</span> Registrar Nuevo Asociado
                 </button>
               </div>
@@ -152,24 +175,24 @@ const registerAsociado = async () => {
           <div class="modal-body">
             <div class="form-grid">
               <div class="form-group full">
-                <label>Nombre Completo</label>
+                <label>Nombre Completo <span style="color: #ef4444;">*</span></label>
                 <div class="input-with-icon">
                   <i>👤</i>
-                  <input v-model="form.nombre_completo" type="text" placeholder="Nombre completo del asociado">
+                  <input v-model="form.nombre_completo" type="text" placeholder="Nombre completo del asociado" required>
                 </div>
               </div>
               <div class="form-group">
-                <label>Documento DPI</label>
+                <label>Documento DPI <span style="color: #ef4444;">*</span></label>
                 <div class="input-with-icon">
                   <i>🆔</i>
-                  <input v-model="form.dpi" type="text" placeholder="13 dígitos">
+                  <input v-model="form.dpi" type="text" placeholder="13 dígitos" required>
                 </div>
               </div>
               <div class="form-group">
-                <label>Código Cliente</label>
+                <label>Código Cliente <span style="color: #ef4444;">*</span></label>
                 <div class="input-with-icon">
                   <i>🔢</i>
-                  <input v-model="form.codigo_cliente" type="text" placeholder="Ej. 1025-X">
+                  <input v-model="form.codigo_cliente" type="text" placeholder="Ej. 102565" required>
                 </div>
               </div>
               <div class="form-group full">
@@ -184,7 +207,7 @@ const registerAsociado = async () => {
 
           <div class="modal-footer">
             <button @click="showModal = false" class="btn-ghost">Descartar</button>
-            <button @click="registerAsociado" class="btn-submit">
+            <button @click="registerAsociado" class="btn-submit" :disabled="!form.nombre_completo?.trim() || !form.dpi?.trim() || !form.codigo_cliente?.trim()">
               Generar Expediente
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
@@ -204,7 +227,7 @@ const registerAsociado = async () => {
   display: flex;
   flex-direction: column;
   background-color: #f8fafc;
-  overflow: hidden;
+  overflow-y: auto;
   padding-bottom: 5rem;
 }
 
@@ -402,29 +425,29 @@ const registerAsociado = async () => {
 
 /* Not Found Card */
 .not-found-card {
-  margin-top: 3rem;
+  margin-top: 1.5rem;
 }
 
 .not-found-content {
   background: white;
-  padding: 3rem;
-  border-radius: 32px;
+  padding: 1.75rem 2rem;
+  border-radius: 24px;
   border: 1px solid #f1f5f9;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.04);
 }
 
-.empty-anim { font-size: 3.5rem; margin-bottom: 1rem; }
-.not-found-content h3 { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
-.not-found-content p { color: #64748b; margin-bottom: 2rem; }
+.empty-anim { font-size: 2.25rem; margin-bottom: 0.5rem; }
+.not-found-content h3 { font-size: 1.25rem; font-weight: 800; color: #1e293b; margin-bottom: 0.25rem; }
+.not-found-content p { color: #64748b; margin-bottom: 1.25rem; font-size: 0.95rem; }
 
 .btn-premium {
   background: #0f172a;
   color: white;
   border: none;
-  padding: 1.1rem 2.5rem;
-  border-radius: 20px;
+  padding: 0.85rem 2rem;
+  border-radius: 16px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -435,8 +458,8 @@ const registerAsociado = async () => {
 
 .btn-premium:hover {
   background: #0ea5e9;
-  transform: translateY(-3px);
-  box-shadow: 0 15px 30px rgba(14, 165, 233, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.2);
 }
 
 /* Modal Styling */
