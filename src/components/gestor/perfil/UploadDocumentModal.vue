@@ -209,7 +209,7 @@ const uploadDocument = () => {
 
 <style scoped>
 .glass-card { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 24px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15); }
-.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 2rem; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 2rem; }
 .modal-content { width: 100%; max-width: 850px; display: flex; flex-direction: column; max-height: 90vh; }
 
 .modal-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid #f1f5f9; }

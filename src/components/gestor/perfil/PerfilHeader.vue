@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 interface Asociado {
   id: number
@@ -7,13 +11,68 @@ interface Asociado {
   nombre_completo: string
   direccion: string
   fecha_registro: string
+  usuario_id?: number
 }
 
 const props = defineProps<{
   asociado: Asociado
 }>()
 
-const emit = defineEmits(['back', 'addDocument'])
+const emit = defineEmits(['back', 'addDocument', 'updateSuccess'])
+
+const authStore = useAuthStore()
+
+const canEdit = computed(() => {
+  const currentUserId = authStore.user?.id || authStore.user?.user_id
+  const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
+  return isSuperAdmin || (props.asociado.usuario_id === currentUserId)
+})
+
+const showEditModal = ref(false)
+const isSaving = ref(false)
+const editForm = ref({
+  nombre_completo: '',
+  dpi: '',
+  codigo_cliente: '',
+  direccion: ''
+})
+
+const openEditModal = () => {
+  editForm.value = {
+    nombre_completo: props.asociado.nombre_completo,
+    dpi: props.asociado.dpi,
+    codigo_cliente: props.asociado.codigo_cliente || '',
+    direccion: props.asociado.direccion || ''
+  }
+  showEditModal.value = true
+}
+
+const updateAsociado = async () => {
+  isSaving.value = true
+  try {
+    const token = sessionStorage.getItem('access_token')
+    const res = await fetch(`${API_URL}/api/gestor/asociados/${props.asociado.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(editForm.value)
+    })
+    const data = await res.json()
+    if (res.ok) {
+      showEditModal.value = false
+      emit('updateSuccess')
+    } else {
+      alert(`Error: ${data.error}`)
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Error al actualizar asociado')
+  } finally {
+    isSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -78,6 +137,11 @@ const emit = defineEmits(['back', 'addDocument'])
 
         <!-- Acciones del Archivador -->
         <div class="header-actions">
+          <button v-if="canEdit" @click="openEditModal" class="btn-archive-edit" title="Editar Perfil">
+            <div class="btn-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+          </button>
           <button @click="emit('addDocument')" class="btn-archive-insert">
             <div class="btn-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
@@ -87,6 +151,56 @@ const emit = defineEmits(['back', 'addDocument'])
         </div>
       </div>
     </div>
+    <!-- Modal de Edición de Asociado -->
+    <Teleport to="body">
+      <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
+        <div class="glass-card modal-content slide-up">
+          <div class="modal-header">
+            <div class="header-main">
+              <div class="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              </div>
+              <div>
+                <h2>Editar Fólder Maestro</h2>
+                <p class="modal-desc">Modifica los detalles principales del expediente.</p>
+              </div>
+            </div>
+            <button @click="showEditModal = false" class="btn-close">×</button>
+          </div>
+          
+          <div class="modal-body-scroll">
+            <div class="form-grid-modal">
+              <div class="form-group full-width">
+                <label>Nombre Completo</label>
+                <input v-model="editForm.nombre_completo" type="text" placeholder="Nombre completo" class="custom-select" required>
+              </div>
+              <div class="form-row-modal">
+                <div class="form-group">
+                  <label>Documento DPI</label>
+                  <input v-model="editForm.dpi" type="text" placeholder="13 dígitos" class="custom-select" required>
+                </div>
+                <div class="form-group">
+                  <label>Código Cliente</label>
+                  <input v-model="editForm.codigo_cliente" type="text" placeholder="Código de cliente" class="custom-select">
+                </div>
+              </div>
+              <div class="form-group full-width">
+                <label>Dirección</label>
+                <textarea v-model="editForm.direccion" placeholder="Dirección completa" class="custom-select custom-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button @click="showEditModal = false" class="btn-secondary" :disabled="isSaving">Cancelar</button>
+            <button @click="updateAsociado" class="btn-primary" :disabled="isSaving || !editForm.nombre_completo?.trim() || !editForm.dpi?.trim()">
+              <span v-if="isSaving" class="spinner-small"></span>
+              <span>Guardar Cambios</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -538,6 +652,128 @@ const emit = defineEmits(['back', 'addDocument'])
   }
   .text-truncate {
     max-width: 100%;
+  }
+}
+
+/* --- EDIT MODAL STYLES --- */
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.btn-archive-edit {
+  background: white;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.btn-archive-edit:hover {
+  background: #f8fafc;
+  color: #0ea5e9;
+  border-color: #0ea5e9;
+}
+.btn-archive-edit .btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+.btn-archive-edit:hover .btn-icon {
+  transform: scale(1.1) rotate(15deg);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 2rem; }
+.modal-content { width: 100%; max-width: 600px; display: flex; flex-direction: column; max-height: 90vh; }
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid #f1f5f9; }
+.header-main { display: flex; gap: 1.25rem; align-items: center; }
+.icon-circle { width: 48px; height: 48px; background: #e0f2fe; color: #0ea5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.icon-circle svg { width: 24px; }
+.modal-header h2 { margin: 0; font-size: 1.5rem; color: #0f172a; font-weight: 800; }
+.modal-desc { color: #64748b; margin: 0.25rem 0 0 0; font-size: 0.95rem; }
+.btn-close { background: #f1f5f9; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.btn-close:hover { background: #fee2e2; color: #ef4444; }
+.modal-body-scroll { padding: 2rem 2.5rem; overflow-y: auto; flex: 1; }
+.form-grid-modal { display: flex; flex-direction: column; gap: 1.25rem; }
+.form-row-modal { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem; }
+.custom-select { width: 100%; padding: 0.85rem 1rem; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 0.95rem; background: #f8fafc; color: #1e293b; outline: none; transition: 0.2s; }
+.custom-select:focus { border-color: #0ea5e9; background: white; box-shadow: 0 0 0 4px rgba(14,165,233,0.1); }
+.custom-textarea { resize: vertical; min-height: 80px; }
+.modal-actions { padding: 1.5rem 2.5rem 2rem; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid #f1f5f9; background: #f8fafc; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+.btn-secondary { background: white; color: #475569; border: 1px solid #e2e8f0; padding: 0.85rem 2rem; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-secondary:hover { background: #f1f5f9; }
+.btn-primary { background: #0ea5e9; color: white; border: none; padding: 0.85rem 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 0.75rem; }
+.btn-primary:hover:not(:disabled) { background: #0284c7; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2); }
+.btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+.spinner-small { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+:root.dark .glass-card {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+:root.dark .btn-archive-edit {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+:root.dark .btn-archive-edit:hover {
+  background: #334155;
+  color: white;
+  border-color: #0ea5e9;
+}
+:root.dark .modal-header { border-color: #1e293b; }
+:root.dark .modal-header h2 { color: #f8fafc; }
+:root.dark .modal-desc { color: #94a3b8; }
+:root.dark .icon-circle { background: #1e293b; }
+:root.dark .btn-close { background: #1e293b; color: #94a3b8; }
+:root.dark .form-group label { color: #cbd5e1; }
+:root.dark .custom-select {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+:root.dark .custom-select:focus { background: #0f172a; border-color: #0ea5e9; }
+:root.dark .modal-actions {
+  background: #020617;
+  border-color: #1e293b;
+}
+:root.dark .btn-secondary {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+:root.dark .btn-secondary:hover { background: #334155; color: white; }
+:root.dark .modal-body-scroll::-webkit-scrollbar-thumb { background: #334155; }
+
+@media (max-width: 1024px) {
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .btn-archive-edit {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

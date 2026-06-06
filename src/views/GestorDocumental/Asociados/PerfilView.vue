@@ -16,6 +16,7 @@ interface Asociado {
   nombre_completo: string
   direccion: string
   fecha_registro: string
+  usuario_id?: number
 }
 
 interface CategoriaMaster {
@@ -148,6 +149,7 @@ onMounted(() => {
         :asociado="asociado" 
         @back="router.push('/gestor/asociados')"
         @addDocument="showUploadModal = true"
+        @updateSuccess="loadAllData"
       />
 
       <ExpedienteGrid 
