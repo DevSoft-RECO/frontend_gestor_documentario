@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import PDFViewer from '@/components/Manuales/PDFViewer.vue'
 
 interface Actualizacion {
@@ -49,6 +49,21 @@ const biblioteca = ref<Categoria[]>([])
 const isLoading = ref(true)
 const searchQuery = ref('')
 const selectedCategoryId = ref<number | 'all'>('all')
+const selectedSubcategoryId = ref<number | 'all'>('all')
+
+// Reset subcategory when category changes
+watch(selectedCategoryId, () => {
+  selectedSubcategoryId.value = 'all'
+})
+
+const availableSubcategorias = computed(() => {
+  if (selectedCategoryId.value === 'all') {
+    // Collect all subcategories from all categories
+    return biblioteca.value.flatMap(cat => cat.subcategorias)
+  }
+  const cat = biblioteca.value.find(c => c.id === selectedCategoryId.value)
+  return cat ? cat.subcategorias : []
+})
 
 // Visor PDF State
 const showViewer = ref(false)
@@ -86,12 +101,17 @@ const filteredBiblioteca = computed(() => {
       return null
     }
 
-    // 2. Si no hay búsqueda, retornar completa
-    if (query === '') {
-      return cat
-    }
-
     const subcats = cat.subcategorias.map(sub => {
+      // 2. Filtrar por Subcategoría Seleccionada
+      if (selectedSubcategoryId.value !== 'all' && sub.id !== selectedSubcategoryId.value) {
+        return null
+      }
+
+      // 3. Si no hay búsqueda, retornar subcategoría completa
+      if (query === '') {
+        return sub
+      }
+
       const docs = sub.documentos.filter(doc => 
         doc.titulo.toLowerCase().includes(query) || 
         sub.nombre.toLowerCase().includes(query) ||
@@ -211,6 +231,39 @@ onMounted(() => {
           <span class="text-base">📁</span>
           <span class="truncate">{{ cat.nombre }}</span>
         </button>
+
+        <!-- FILTRO DE SUBCATEGORIAS -->
+        <div v-if="availableSubcategorias.length > 0" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+          <div class="text-[0.7rem] font-extrabold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 mb-2">Subcarpetas / Tipos</div>
+          
+          <button 
+            @click="selectedSubcategoryId = 'all'" 
+            :class="[
+              'w-full text-left px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-3 transition-all',
+              selectedSubcategoryId === 'all' 
+                ? 'bg-emerald-600 dark:bg-emerald-800 text-white shadow-lg shadow-emerald-600/10' 
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            ]"
+          >
+            <span>📁</span>
+            <span>Todas las Subcarpetas</span>
+          </button>
+
+          <button 
+            v-for="sub in availableSubcategorias" 
+            :key="sub.id"
+            @click="selectedSubcategoryId = sub.id"
+            :class="[
+              'w-full text-left px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-3 transition-all',
+              selectedSubcategoryId === sub.id 
+                ? 'bg-emerald-600 dark:bg-emerald-800 text-white shadow-lg shadow-emerald-600/10' 
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            ]"
+          >
+            <span>📄</span>
+            <span class="truncate">{{ sub.nombre }}</span>
+          </button>
+        </div>
       </aside>
 
       <!-- SECCIÓN DE CARPETAS DE MANUALES -->
@@ -224,7 +277,7 @@ onMounted(() => {
           <span class="text-4xl">📚</span>
           <h3 class="text-lg font-black text-slate-800 dark:text-slate-200">No se encontraron normativas</h3>
           <p class="text-xs text-slate-500 dark:text-slate-400">Es posible que no tengas puestos autorizados asignados a las normativas existentes o que no existan documentos cargados bajo los filtros seleccionados.</p>
-          <button @click="searchQuery = ''; selectedCategoryId = 'all'" class="btn-clear-filters">Restaurar Filtros</button>
+          <button @click="searchQuery = ''; selectedCategoryId = 'all'; selectedSubcategoryId = 'all'" class="btn-clear-filters">Restaurar Filtros</button>
         </div>
 
         <!-- LISTADO DE CATEGORÍAS/SUBCATEGORÍAS -->
