@@ -50,6 +50,7 @@ const isLoading = ref(true)
 const searchQuery = ref('')
 const selectedCategoryId = ref<number | 'all'>('all')
 const selectedSubcategoryId = ref<number | 'all'>('all')
+const viewMode = ref<'grid' | 'list'>('grid')
 
 // Reset subcategory when category changes
 watch(selectedCategoryId, () => {
@@ -281,7 +282,36 @@ onMounted(() => {
         </div>
 
         <!-- LISTADO DE CATEGORÍAS/SUBCATEGORÍAS -->
-        <div v-else class="space-y-12">
+        <div v-else class="space-y-8">
+          <!-- Selector de Visualización (Tarjetas vs Lista) -->
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Visualización de Documentos</div>
+            <div class="flex items-center bg-slate-250 dark:bg-slate-800 p-1 rounded-xl">
+              <button 
+                @click="viewMode = 'grid'" 
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+                  viewMode === 'grid' 
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ]"
+              >
+                <span>🎴</span> Tarjetas
+              </button>
+              <button 
+                @click="viewMode = 'list'" 
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+                  viewMode === 'list' 
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ]"
+              >
+                <span>📝</span> Lista
+              </button>
+            </div>
+          </div>
+
           <div v-for="cat in filteredBiblioteca" :key="cat.id" class="folder-group-wrapper animate-in fade-in slide-in-from-bottom-2">
             <!-- Título de la Carpeta Manila Padre -->
             <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3 mb-6">
@@ -299,7 +329,7 @@ onMounted(() => {
                 </div>
 
                 <!-- Grid de Manuales (Documentos de Lectura) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   <div 
                     v-for="doc in sub.documentos" 
                     :key="doc.id"
@@ -347,8 +377,48 @@ onMounted(() => {
                     
                     <!-- Acción -->
                     <span class="shrink-0 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                      <svg xmlns="http://www.w3.org/2500/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </span>
+                  </div>
+                </div>
+
+                <!-- Lista de Manuales (Documentos de Lectura) -->
+                <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-slate-50 dark:bg-slate-900">
+                  <div 
+                    v-for="doc in sub.documentos" 
+                    :key="doc.id"
+                    @click="openManual(doc)"
+                    class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <div class="flex items-center gap-4 min-w-0">
+                      <!-- Icono PDF -->
+                      <div class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-xs font-bold text-slate-800 dark:text-slate-100 hover:text-indigo-650">{{ doc.titulo }}</span>
+                          <span :class="['px-1.5 py-0.5 rounded font-black text-[0.5rem] uppercase tracking-wider shrink-0', getVigenciaStatus(doc).class]">
+                            {{ getVigenciaStatus(doc).label }}
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6rem] text-slate-400 mt-0.5">
+                          <span class="font-bold text-slate-500">{{ doc.total_paginas }} págs</span>
+                          <span v-if="doc.numero_acta">· Acta: {{ doc.numero_acta }}</span>
+                          <span v-if="doc.fecha_aprobacion">· Aprobado: {{ formatDate(doc.fecha_aprobacion) }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 shrink-0 justify-between md:justify-end">
+                      <!-- Última hoja de cambio (resumida en lista) -->
+                      <div v-if="getLatestActiveUpdate(doc)" class="text-[0.6rem] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/10 px-2.5 py-1 rounded-lg flex items-center gap-1.5" @click.stop="openManual(doc)">
+                        <span class="font-bold text-indigo-650 dark:text-indigo-400">🔄 Última Acta: {{ getLatestActiveUpdate(doc)?.numero_acta }}</span>
+                      </div>
+                      <span class="text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
