@@ -323,13 +323,13 @@ onMounted(() => {
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-6 mb-8">
         <div>
           <span class="text-xs font-black tracking-widest text-indigo-600 dark:text-indigo-400 uppercase">Panel de Administración</span>
-          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 font-['Outfit']">Configuración de Biblioteca de Manuales</h1>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 font-['Outfit']">Configuración de Biblioteca de Normativas</h1>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Crea estructuras, sube archivos PDF y controla los permisos de lectura de los colaboradores según sus puestos asignados.</p>
         </div>
         
         <div class="flex gap-3">
           <button @click="openCreateManual" class="btn-indigo">
-            <span>➕ Subir Manual</span>
+            <span>➕ Subir Normativa</span>
           </button>
           <button @click="openCreateCat" class="btn-slate">
             <span>📂 Crear Fólder</span>
@@ -351,7 +351,7 @@ onMounted(() => {
               : 'border-transparent text-slate-400 hover:text-slate-650'
           ]"
         >
-          📄 Lista de Manuales
+          📄 Lista de Normativas
         </button>
         <button 
           @click="activeTab = 'categorias'" 
@@ -379,7 +379,7 @@ onMounted(() => {
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[0.65rem] font-extrabold uppercase text-slate-400 tracking-wider">
-                  <th class="p-4">Título del Manual</th>
+                  <th class="p-4">Título de la Normativa</th>
                   <th class="p-4">Estructura</th>
                   <th class="p-4">Total Págs</th>
                   <th class="p-4">Cargos Autorizados</th>
@@ -453,7 +453,8 @@ onMounted(() => {
                 </tr>
                 <tr v-if="manuales.length === 0">
                   <td colspan="5" class="p-16 text-center text-slate-400">
-                    <p class="text-base mb-2">📚 No se han cargado manuales aún</p>
+                    <p class="text-base mb-2">📚 No se han cargado normativas
+                       aún</p>
                     <button @click="openCreateManual" class="btn-indigo mx-auto text-xs py-2 px-4 rounded-xl">Subir Primer Manual</button>
                   </td>
                 </tr>

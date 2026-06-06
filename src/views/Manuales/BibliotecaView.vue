@@ -157,7 +157,7 @@ onMounted(() => {
       <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div>
           <span class="text-xs font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Centro de Conocimiento</span>
-          <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mt-2 text-slate-100 font-['Outfit']">Biblioteca de Manuales</h1>
+          <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mt-2 text-slate-100 font-['Outfit']">Biblioteca de Normativas</h1>
           <p class="text-sm text-slate-300 mt-1 max-w-2xl">Visualiza, busca y lee de forma ágil y segura toda la documentación, guías de operación y políticas autorizadas de la organización.</p>
         </div>
         
@@ -217,13 +217,13 @@ onMounted(() => {
       <div class="flex-1 space-y-12">
         <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 gap-4">
           <div class="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <p class="text-sm font-bold text-slate-400">Indexando biblioteca de manuales...</p>
+          <p class="text-sm font-bold text-slate-400">Indexando biblioteca de normativas...</p>
         </div>
 
         <div v-else-if="filteredBiblioteca.length === 0" class="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 p-16 rounded-3xl text-center space-y-4 shadow-sm max-w-xl mx-auto">
           <span class="text-4xl">📚</span>
-          <h3 class="text-lg font-black text-slate-800 dark:text-slate-200">No se encontraron manuales</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Es posible que no tengas puestos autorizados asignados a los manuales existentes o que no existan documentos cargados bajo los filtros seleccionados.</p>
+          <h3 class="text-lg font-black text-slate-800 dark:text-slate-200">No se encontraron normativas</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Es posible que no tengas puestos autorizados asignados a las normativas existentes o que no existan documentos cargados bajo los filtros seleccionados.</p>
           <button @click="searchQuery = ''; selectedCategoryId = 'all'" class="btn-clear-filters">Restaurar Filtros</button>
         </div>
 

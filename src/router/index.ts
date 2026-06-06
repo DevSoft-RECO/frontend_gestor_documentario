@@ -98,7 +98,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'manuales-biblioteca',
                 component: BibliotecaView,
                 meta: {
-                    title: 'Biblioteca de Manuales'
+                    title: 'Biblioteca de Normativas'
                 }
             },
             {
@@ -106,7 +106,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'manuales-configuracion',
                 component: AdminManualesView,
                 meta: {
-                    title: 'Configuración de Manuales',
+                    title: 'Configuración de Normativas',
                     permission: 'admin_biblioteca'
                 }
             }

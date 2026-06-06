@@ -161,10 +161,10 @@
           </div>
           <div>
             <h2 class="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              Biblioteca de Manuales & Documentación
+              Biblioteca de Normativas & Documentación
             </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Analíticas de volumen y distribución de manuales en la plataforma
+              Analíticas de volumen y distribución de Normativas en la plataforma
             </p>
           </div>
         </div>
@@ -189,8 +189,8 @@
         <!-- Manuals Category Distribution List / Bar Breakdown (Left 2 cols) -->
         <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
           <div class="mb-6">
-            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Manuales por Categoría</h3>
-            <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de biblioteca de manuales</p>
+            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Normativas por Categoría</h3>
+            <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de biblioteca de normativas</p>
           </div>
           <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
             <div v-for="(cat, i) in stats.manuales_por_categoria" :key="i" class="space-y-2">
@@ -222,7 +222,7 @@
                   <path d="M12 5v14M5 12h14"/>
                 </svg>
               </div>
-              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Manuales Recientes</h3>
+              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Normativas Recientes</h3>
             </div>
             <span class="text-[0.6rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">ÚLTIMOS 5</span>
           </div>
@@ -241,7 +241,7 @@
               <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_creacion) }}</span>
             </div>
             <div v-if="!stats.manuales_recientes?.length" class="py-16 text-center text-slate-400">
-              <p class="text-xs font-bold">Sin manuales cargados</p>
+              <p class="text-xs font-bold">Sin normativas cargados</p>
             </div>
           </div>
         </div>
@@ -364,7 +364,7 @@ const manualKpis = computed(() => {
   if (!stats.value) return []
   return [
     {
-      label: 'Manuales Totales',
+      label: 'Normativas Totales',
       value: stats.value.total_manuales || 0,
       icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
       iconBg: 'bg-violet-50 dark:bg-violet-900/20',
@@ -384,7 +384,7 @@ const manualKpis = computed(() => {
       glow: 'bg-emerald-500'
     },
     {
-      label: 'Categorías Manuales',
+      label: 'Categorías Normativas',
       value: stats.value.total_categorias_manuales || 0,
       icon: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
       iconBg: 'bg-cyan-50 dark:bg-cyan-900/20',
