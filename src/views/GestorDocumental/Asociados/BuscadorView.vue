@@ -87,10 +87,18 @@ const registerAsociado = async () => {
     if (res.ok) {
       goToProfile(data.id)
     } else {
-      alert(`Error: ${data.error}`)
+      const errorMsg = data.error || ''
+      if (errorMsg.includes('DPI')) {
+        alert('El Documento DPI ya existe.')
+      } else if (errorMsg.includes('Código Cliente')) {
+        alert('El Código Cliente ya existe.')
+      } else {
+        alert(errorMsg || 'Error al registrar asociado.')
+      }
     }
   } catch (e) {
     console.error(e)
+    alert('Error al conectar con el servidor.')
   }
 }
 </script>
