@@ -25,7 +25,7 @@ const authStore = useAuthStore()
 const canEdit = computed(() => {
   const currentUserId = authStore.user?.id || authStore.user?.user_id
   const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
-  return isSuperAdmin || (props.asociado.usuario_id === currentUserId)
+  return isSuperAdmin || (Number(props.asociado.usuario_id) === Number(currentUserId))
 })
 
 const showEditModal = ref(false)
