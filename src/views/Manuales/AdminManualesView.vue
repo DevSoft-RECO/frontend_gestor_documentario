@@ -25,17 +25,21 @@ interface Actualizacion {
 
 interface Manual {
   id: number
-  manual_subcategoria_id: number
+  manual_carpeta_id: number
   titulo: string
   file_path: string
   total_paginas: number
   puestos_autorizados: Puesto[]
-  subcategoria?: {
+  carpeta?: {
     id: number
     nombre: string
-    categoria?: {
+    subcategoria?: {
       id: number
       nombre: string
+      categoria?: {
+        id: number
+        nombre: string
+      }
     }
   }
   numero_acta?: string
@@ -44,11 +48,19 @@ interface Manual {
   actualizaciones?: Actualizacion[]
 }
 
+interface Carpeta {
+  id: number
+  manual_subcategoria_id: number
+  nombre: string
+  estado: boolean
+}
+
 interface Subcategoria {
   id: number
   manual_categoria_id: number
   nombre: string
   estado: boolean
+  carpetas?: Carpeta[]
 }
 
 interface Categoria {
@@ -72,6 +84,7 @@ const activeTab = ref<'manuales' | 'categorias'>('manuales')
 const showCreateManualModal = ref(false)
 const showCatModal = ref(false)
 const showSubcatModal = ref(false)
+const showCarpetaModal = ref(false)
 const showUpdateUploadModal = ref(false)
 const updateManualId = ref<number | null>(null)
 
@@ -80,17 +93,25 @@ const showViewer = ref(false)
 const selectedManual = ref<Manual | null>(null)
 const selectedManualForEdit = ref<Manual | null>(null)
 
-// Estado del formulario de Categorías
+// Estado del formulario de Gavetas (Categorías)
 const catForm = ref({
   id: null as number | null,
   nombre: '',
   estado: true
 })
 
-// Estado del formulario de Subcategorías
+// Estado del formulario de Portafolios (Subcategorías)
 const subcatForm = ref({
   id: null as number | null,
   categoriaId: '',
+  nombre: '',
+  estado: true
+})
+
+// Estado del formulario de Carpetas
+const carpetaForm = ref({
+  id: null as number | null,
+  subcategoriaId: '',
   nombre: '',
   estado: true
 })
@@ -120,19 +141,24 @@ const loadAllData = async () => {
       const flatDocs: Manual[] = []
       data.forEach((cat: Categoria) => {
         cat.subcategorias?.forEach(sub => {
-          // Inyectamos relaciones aplanadas para facilitar la renderización
-          const docs = (sub as any).documentos || []
-          docs.forEach((doc: any) => {
-            flatDocs.push({
-              ...doc,
-              subcategoria: {
-                id: sub.id,
-                nombre: sub.nombre,
-                categoria: {
-                  id: cat.id,
-                  nombre: cat.nombre
+          sub.carpetas?.forEach(carp => {
+            const docs = (carp as any).documentos || []
+            docs.forEach((doc: any) => {
+              flatDocs.push({
+                ...doc,
+                carpeta: {
+                  id: carp.id,
+                  nombre: carp.nombre,
+                  subcategoria: {
+                    id: sub.id,
+                    nombre: sub.nombre,
+                    categoria: {
+                      id: cat.id,
+                      nombre: cat.nombre
+                    }
+                  }
                 }
-              }
+              })
             })
           })
         })
@@ -146,7 +172,6 @@ const loadAllData = async () => {
   }
 }
 
-// Computados para subcategorías basadas en la categoría seleccionada
 // --- ACCIONES CRUD MANUALES ---
 
 const openCreateManual = () => {
@@ -160,7 +185,7 @@ const editManual = (doc: Manual) => {
 }
 
 const deleteManual = async (id: number) => {
-  if (!confirm('¿Estás seguro de eliminar físicamente este manual? Esta acción no se puede deshacer.')) return
+  if (!confirm('¿Estás seguro de eliminar físicamente esta normativa? Esta acción no se puede deshacer.')) return
   try {
     const res = await fetch(`${API_URL}/api/manuales/documentos/${id}`, {
       method: 'DELETE',
@@ -169,14 +194,14 @@ const deleteManual = async (id: number) => {
     if (res.ok) {
       loadAllData()
     } else {
-      alert('Error al eliminar manual')
+      alert('Error al eliminar normativa')
     }
   } catch (err) {
     console.error(err)
   }
 }
 
-// --- ACCIONES CRUD CATEGORÍAS ---
+// --- ACCIONES CRUD GAVETAS (CATEGORÍAS) ---
 
 const openCreateCat = () => {
   catForm.value = { id: null, nombre: '', estado: true }
@@ -204,14 +229,14 @@ const saveCat = async () => {
       showCatModal.value = false
       loadAllData()
     } else {
-      alert('Error al guardar categoría')
+      alert('Error al guardar gaveta')
     }
   } catch (err) {
     console.error(err)
   }
 }
 
-// --- ACCIONES CRUD SUBCATEGORÍAS ---
+// --- ACCIONES CRUD PORTAFOLIOS (SUBCATEGORÍAS) ---
 
 const openCreateSubcat = () => {
   subcatForm.value = { id: null, categoriaId: '', nombre: '', estado: true }
@@ -248,7 +273,51 @@ const saveSubcat = async () => {
       showSubcatModal.value = false
       loadAllData()
     } else {
-      alert('Error al guardar subcategoría')
+      alert('Error al guardar portafolio')
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// --- ACCIONES CRUD CARPETAS (NIVEL 3) ---
+
+const openCreateCarpeta = () => {
+  carpetaForm.value = { id: null, subcategoriaId: '', nombre: '', estado: true }
+  showCarpetaModal.value = true
+}
+
+const editCarpeta = (carp: Carpeta) => {
+  carpetaForm.value = {
+    id: carp.id,
+    subcategoriaId: carp.manual_subcategoria_id.toString(),
+    nombre: carp.nombre,
+    estado: carp.estado
+  }
+  showCarpetaModal.value = true
+}
+
+const saveCarpeta = async () => {
+  if (carpetaForm.value.nombre.trim() === '' || carpetaForm.value.subcategoriaId === '') return
+  const isEdit = carpetaForm.value.id !== null
+  const url = isEdit ? `${API_URL}/api/manuales/carpetas/${carpetaForm.value.id}` : `${API_URL}/api/manuales/carpetas`
+  const method = isEdit ? 'PUT' : 'POST'
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        manual_subcategoria_id: parseInt(carpetaForm.value.subcategoriaId),
+        nombre: carpetaForm.value.nombre,
+        estado: carpetaForm.value.estado
+      })
+    })
+    if (res.ok) {
+      showCarpetaModal.value = false
+      loadAllData()
+    } else {
+      alert('Error al guardar carpeta')
     }
   } catch (err) {
     console.error(err)
@@ -283,9 +352,26 @@ const deleteUpdate = async (updateId: number) => {
 }
 
 const getVigenciaStatus = (manual: Manual) => {
-  return { 
-    label: manual.id ? 'Vigente' : 'Vigente', 
-    class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10' 
+  if (!manual.fecha_vigencia) {
+    return {
+      label: 'Vigente',
+      class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10'
+    }
+  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const vigenciaDate = new Date(manual.fecha_vigencia)
+  
+  if (vigenciaDate >= today) {
+    return {
+      label: 'Vigente',
+      class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10'
+    }
+  } else {
+    return {
+      label: 'Vencido',
+      class: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/10'
+    }
   }
 }
 
@@ -323,8 +409,8 @@ onMounted(() => {
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-6 mb-8">
         <div>
           <span class="text-xs font-black tracking-widest text-indigo-600 dark:text-indigo-400 uppercase">Panel de Administración</span>
-          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 font-['Outfit']">Configuración de Biblioteca de Normativas</h1>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Crea estructuras, sube archivos PDF y controla los permisos de lectura de los colaboradores según sus puestos asignados.</p>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 font-['Outfit']">Biblioteca de Normativas (Gavetas)</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Crea estructuras (Gaveta ➔ Portafolio ➔ Carpeta), sube archivos PDF y controla los permisos de lectura de los colaboradores según sus puestos asignados.</p>
         </div>
         
         <div class="flex gap-3">
@@ -332,10 +418,13 @@ onMounted(() => {
             <span>➕ Subir Normativa</span>
           </button>
           <button @click="openCreateCat" class="btn-slate">
-            <span>📂 Crear Fólder</span>
+            <span>📂 Crear Gaveta</span>
           </button>
           <button @click="openCreateSubcat" class="btn-slate">
-            <span>📁 Crear Subfólder</span>
+            <span>📁 Crear Portafolio</span>
+          </button>
+          <button @click="openCreateCarpeta" class="btn-slate">
+            <span>🗂️ Crear Carpeta</span>
           </button>
         </div>
       </div>
@@ -362,7 +451,7 @@ onMounted(() => {
               : 'border-transparent text-slate-400 hover:text-slate-650'
           ]"
         >
-          📂 Estructura de Fólderes
+          📂 Estructura Física (Gavetas)
         </button>
       </div>
 
@@ -380,7 +469,7 @@ onMounted(() => {
               <thead>
                 <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[0.65rem] font-extrabold uppercase text-slate-400 tracking-wider">
                   <th class="p-4">Título de la Normativa</th>
-                  <th class="p-4">Estructura</th>
+                  <th class="p-4">Estructura de Destino</th>
                   <th class="p-4">Total Págs</th>
                   <th class="p-4">Cargos Autorizados</th>
                   <th class="p-4 text-center">Acciones</th>
@@ -405,7 +494,7 @@ onMounted(() => {
                         </div>
                         <p class="text-[0.6rem] text-slate-400 font-mono truncate max-w-[250px]">{{ doc.file_path }}</p>
                         
-                        <!-- Listado de la Última Hoja de Actualización Versionada Activa (Solo la última con archivo) -->
+                        <!-- Listado de la Última Hoja de Actualización Versionada Activa -->
                         <div v-if="getLatestActiveUpdate(doc)" class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
                           <p class="text-[0.55rem] font-black text-slate-400 uppercase tracking-wider">🔄 Última Hoja de Cambio Activa:</p>
                           <div v-for="upd in [getLatestActiveUpdate(doc)].filter(Boolean) as Actualizacion[]" :key="upd.id" class="flex flex-col gap-1 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-150 dark:border-slate-850">
@@ -426,8 +515,9 @@ onMounted(() => {
                     </div>
                   </td>
                   <td class="p-4 text-slate-500 dark:text-slate-400">
-                    <p class="font-bold text-slate-700 dark:text-slate-350">📂 {{ doc.subcategoria?.categoria?.nombre }}</p>
-                    <p class="text-[0.65rem]">📁 {{ doc.subcategoria?.nombre }}</p>
+                    <p class="font-bold text-slate-700 dark:text-slate-350">📂 Gaveta: {{ doc.carpeta?.subcategoria?.categoria?.nombre || 'N/A' }}</p>
+                    <p class="text-[0.7rem] font-medium text-slate-650 dark:text-slate-400">📁 Portafolio: {{ doc.carpeta?.subcategoria?.nombre || 'N/A' }}</p>
+                    <p class="text-[0.65rem] text-indigo-500 font-bold">🗂️ Carpeta: {{ doc.carpeta?.nombre || 'N/A' }}</p>
                   </td>
                   <td class="p-4 font-bold font-mono">{{ doc.total_paginas }} págs</td>
                   <td class="p-4">
@@ -444,17 +534,16 @@ onMounted(() => {
                   </td>
                   <td class="p-4">
                     <div class="flex items-center justify-center gap-2">
-                      <button @click="openManual(doc)" class="btn-action-view" title="Visualizar Manual">👁️</button>
+                      <button @click="openManual(doc)" class="btn-action-view" title="Visualizar Normativa">👁️</button>
                       <button @click="openUploadUpdate(doc.id)" class="btn-action-update" title="Subir Hojas de Actualización">🔄</button>
                       <button @click="editManual(doc)" class="btn-action-edit" title="Editar Permisos">✏️</button>
-                      <button @click="deleteManual(doc.id)" class="btn-action-delete" title="Eliminar Manual">🗑️</button>
+                      <button @click="deleteManual(doc.id)" class="btn-action-delete" title="Eliminar Normativa">🗑️</button>
                     </div>
                   </td>
                 </tr>
                 <tr v-if="manuales.length === 0">
                   <td colspan="5" class="p-16 text-center text-slate-400">
-                    <p class="text-base mb-2">📚 No se han cargado normativas
-                       aún</p>
+                    <p class="text-base mb-2">📚 No se han cargado normativas aún</p>
                     <button @click="openCreateManual" class="btn-indigo mx-auto text-xs py-2 px-4 rounded-xl">Subir Primer Manual</button>
                   </td>
                 </tr>
@@ -464,19 +553,19 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- TAB: ESTRUCTURA DE FÓLDERES -->
-      <div v-else-if="activeTab === 'categorias'" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Lista de Categorías -->
+      <!-- TAB: ESTRUCTURA DE GAVETAS (3 NIVELES) -->
+      <div v-else-if="activeTab === 'categorias'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Lista de Gavetas -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3 mb-2">
-            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">📂 Fólderes Principales</h3>
-            <button @click="openCreateCat" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline">+ Crear Fólder</button>
+            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">📂 Gavetas (Generales)</h3>
+            <button @click="openCreateCat" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline">+ Crear Gaveta</button>
           </div>
           <div class="divide-y divide-slate-150 dark:divide-slate-800">
             <div v-for="cat in categorias" :key="cat.id" class="py-4 flex items-center justify-between gap-4">
               <div>
                 <p class="font-extrabold text-sm text-slate-800 dark:text-slate-100">{{ cat.nombre }}</p>
-                <p class="text-[0.65rem] text-slate-500 dark:text-slate-500">Subfólderes asignados: <span class="font-bold text-slate-700 dark:text-slate-350">{{ cat.subcategorias?.length || 0 }}</span></p>
+                <p class="text-[0.65rem] text-slate-500 dark:text-slate-500">Portafolios: <span class="font-bold text-slate-700 dark:text-slate-350">{{ cat.subcategorias?.length || 0 }}</span></p>
               </div>
               <div class="flex items-center gap-2">
                 <button @click="editCat(cat)" class="btn-action-edit">✏️</button>
@@ -485,23 +574,47 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Lista de Subcategorías -->
+        <!-- Lista de Portafolios -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3 mb-2">
-            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">📁 Subfólderes</h3>
-            <button @click="openCreateSubcat" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline">+ Crear Subfólder</button>
+            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">📁 Portafolios (Nivel 1)</h3>
+            <button @click="openCreateSubcat" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline">+ Crear Portafolio</button>
           </div>
           <div class="divide-y divide-slate-150 dark:divide-slate-800">
             <template v-for="cat in categorias" :key="'sublist-'+cat.id">
               <div v-for="sub in cat.subcategorias" :key="sub.id" class="py-4 flex items-center justify-between gap-4">
                 <div>
                   <p class="font-extrabold text-sm text-slate-800 dark:text-slate-100">{{ sub.nombre }}</p>
-                  <p class="text-[0.65rem] text-slate-500 dark:text-slate-500">Pertenece a: <span class="font-bold text-indigo-500">{{ cat.nombre }}</span></p>
+                  <p class="text-[0.65rem] text-slate-500 dark:text-slate-500">Pertenece a Gaveta: <span class="font-bold text-indigo-500">{{ cat.nombre }}</span></p>
+                  <p class="text-[0.6rem] text-slate-400">Carpetas asignadas: <span class="font-bold text-slate-650">{{ sub.carpetas?.length || 0 }}</span></p>
                 </div>
                 <div class="flex items-center gap-2">
                   <button @click="editSubcat(sub)" class="btn-action-edit">✏️</button>
                 </div>
               </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Lista de Carpetas -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-3 mb-2">
+            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">🗂️ Carpetas (Nivel 2)</h3>
+            <button @click="openCreateCarpeta" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline">+ Crear Carpeta</button>
+          </div>
+          <div class="divide-y divide-slate-150 dark:divide-slate-800">
+            <template v-for="cat in categorias" :key="'carplist-'+cat.id">
+              <template v-for="sub in cat.subcategorias" :key="'carpsublist-'+sub.id">
+                <div v-for="carp in sub.carpetas" :key="carp.id" class="py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p class="font-extrabold text-sm text-slate-800 dark:text-slate-100">{{ carp.nombre }}</p>
+                    <p class="text-[0.65rem] text-slate-500 dark:text-slate-500">En Portafolio: <span class="font-bold text-indigo-500">{{ sub.nombre }}</span> ({{ cat.nombre }})</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button @click="editCarpeta(carp)" class="btn-action-edit">✏️</button>
+                  </div>
+                </div>
+              </template>
             </template>
           </div>
         </div>
@@ -527,20 +640,20 @@ onMounted(() => {
       @saved="loadAllData"
     />
 
-    <!-- MODAL: GESTIÓN DE CATEGORÍAS -->
+    <!-- MODAL: GESTIÓN DE GAVETAS (CATEGORÍAS) -->
     <div v-if="showCatModal" class="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6">
-        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ catForm.id ? '✏️ Editar Fólder' : '📂 Crear Nuevo Fólder Principal' }}</h3>
+        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ catForm.id ? '✏️ Editar Gaveta' : '📂 Crear Nueva Gaveta' }}</h3>
         
         <div class="space-y-4">
           <div class="space-y-1.5">
-            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Nombre del Fólder</label>
-            <input type="text" v-model="catForm.nombre" placeholder="Ej: Políticas de Riesgos, Manuales Operativos..." class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" />
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Nombre de la Gaveta</label>
+            <input type="text" v-model="catForm.nombre" placeholder="Ej: Gerencia Administrativa, Auditoría..." class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" />
           </div>
           
           <div class="flex items-center gap-3">
             <input type="checkbox" v-model="catForm.estado" id="catEstadoInput" class="rounded border-slate-300 text-indigo-650 h-4.5 w-4.5" />
-            <label for="catEstadoInput" class="text-xs font-bold select-none cursor-pointer">Fólder Activo</label>
+            <label for="catEstadoInput" class="text-xs font-bold select-none cursor-pointer">Gaveta Activa</label>
           </div>
         </div>
 
@@ -551,34 +664,68 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- MODAL: GESTIÓN DE SUBCATEGORÍAS -->
+    <!-- MODAL: GESTIÓN DE PORTAFOLIOS (SUBCATEGORÍAS) -->
     <div v-if="showSubcatModal" class="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6">
-        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ subcatForm.id ? '✏️ Editar Subfólder' : '📁 Crear Nuevo Subfólder' }}</h3>
+        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ subcatForm.id ? '✏️ Editar Portafolio' : '📁 Crear Nuevo Portafolio' }}</h3>
         
         <div class="space-y-4">
           <div class="space-y-1.5">
-            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Fólder Principal de Destino</label>
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Gaveta Principal de Destino</label>
             <select v-model="subcatForm.categoriaId" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none">
-              <option value="">Selecciona Fólder Principal...</option>
+              <option value="">Selecciona Gaveta...</option>
               <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
             </select>
           </div>
 
           <div class="space-y-1.5">
-            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Nombre del Subfólder</label>
-            <input type="text" v-model="subcatForm.nombre" placeholder="Ej: Captaciones, Créditos, Atención..." class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" />
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Nombre del Portafolio</label>
+            <input type="text" v-model="subcatForm.nombre" placeholder="Ej: Informática, Contabilidad..." class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" />
           </div>
           
           <div class="flex items-center gap-3">
             <input type="checkbox" v-model="subcatForm.estado" id="subcatEstadoInput" class="rounded border-slate-300 text-indigo-650 h-4.5 w-4.5" />
-            <label for="subcatEstadoInput" class="text-xs font-bold select-none cursor-pointer">Subfólder Activo</label>
+            <label for="subcatEstadoInput" class="text-xs font-bold select-none cursor-pointer">Portafolio Activo</label>
           </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-2">
           <button @click="showSubcatModal = false" class="btn-slate"><span>Cancelar</span></button>
           <button @click="saveSubcat" class="btn-indigo"><span>Guardar</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GESTIÓN DE CARPETAS (NIVEL 3) -->
+    <div v-if="showCarpetaModal" class="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6">
+        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ carpetaForm.id ? '✏️ Editar Carpeta' : '🗂️ Crear Nueva Carpeta' }}</h3>
+        
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Portafolio de Destino</label>
+            <select v-model="carpetaForm.subcategoriaId" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none">
+              <option value="">Selecciona Portafolio...</option>
+              <optgroup v-for="c in categorias" :key="'group-'+c.id" :label="c.nombre">
+                <option v-for="s in c.subcategorias" :key="s.id" :value="s.id">{{ s.nombre }}</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase">Nombre de la Carpeta</label>
+            <input type="text" v-model="carpetaForm.nombre" placeholder="Ej: Manuales, Procedimientos..." class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" />
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <input type="checkbox" v-model="carpetaForm.estado" id="carpetaEstadoInput" class="rounded border-slate-300 text-indigo-650 h-4.5 w-4.5" />
+            <label for="carpetaEstadoInput" class="text-xs font-bold select-none cursor-pointer">Carpeta Activa</label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button @click="showCarpetaModal = false" class="btn-slate"><span>Cancelar</span></button>
+          <button @click="saveCarpeta" class="btn-indigo"><span>Guardar</span></button>
         </div>
       </div>
     </div>

@@ -20,17 +20,21 @@ interface Actualizacion {
 
 interface Manual {
   id: number
-  manual_subcategoria_id: number
+  manual_carpeta_id: number
   titulo: string
   file_path: string
   total_paginas: number
   puestos_autorizados: Puesto[]
-  subcategoria?: {
+  carpeta?: {
     id: number
     nombre: string
-    categoria?: {
+    subcategoria?: {
       id: number
       nombre: string
+      categoria?: {
+        id: number
+        nombre: string
+      }
     }
   }
   numero_acta?: string
@@ -39,11 +43,19 @@ interface Manual {
   actualizaciones?: Actualizacion[]
 }
 
+interface Carpeta {
+  id: number
+  manual_subcategoria_id: number
+  nombre: string
+  estado: boolean
+}
+
 interface Subcategoria {
   id: number
   manual_categoria_id: number
   nombre: string
   estado: boolean
+  carpetas?: Carpeta[]
 }
 
 interface Categoria {
@@ -72,6 +84,7 @@ const manualForm = ref({
   titulo: '',
   categoriaId: '',
   subcategoriaId: '',
+  carpetaId: '',
   file: null as File | null,
   puestosAutorizadosIds: [] as number[],
   numeroActa: '',
@@ -83,6 +96,12 @@ const subcategoriasDisponiblesForm = computed(() => {
   if (!manualForm.value.categoriaId) return []
   const cat = props.categorias.find(c => c.id === parseInt(manualForm.value.categoriaId))
   return cat?.subcategorias || []
+})
+
+const carpetasDisponiblesForm = computed(() => {
+  if (!manualForm.value.subcategoriaId) return []
+  const sub = subcategoriasDisponiblesForm.value.find(s => s.id === parseInt(manualForm.value.subcategoriaId))
+  return sub?.carpetas || []
 })
 
 const handleManualFileChange = (e: Event) => {
@@ -102,15 +121,15 @@ const togglePuestoAuth = (id: number) => {
 }
 
 const saveManual = async () => {
-  if (manualForm.value.titulo.trim() === '' || manualForm.value.subcategoriaId === '') {
-    alert('Ingresa el título y selecciona la subcategoría.')
+  if (manualForm.value.titulo.trim() === '' || manualForm.value.carpetaId === '') {
+    alert('Ingresa el título y selecciona la Carpeta de destino.')
     return
   }
 
   isSubmittingManual.value = true
   const formData = new FormData()
   formData.append('titulo', manualForm.value.titulo)
-  formData.append('subcategoria_id', manualForm.value.subcategoriaId)
+  formData.append('manual_carpeta_id', manualForm.value.carpetaId)
   formData.append('puestos_autorizados', manualForm.value.puestosAutorizadosIds.join(','))
   formData.append('numero_acta', manualForm.value.numeroActa)
   formData.append('fecha_aprobacion', manualForm.value.fechaAprobacion)
@@ -164,8 +183,9 @@ watch(() => props.show, (newShow) => {
       manualForm.value = {
         id: props.manual.id,
         titulo: props.manual.titulo,
-        categoriaId: props.manual.subcategoria?.categoria?.id?.toString() || '',
-        subcategoriaId: props.manual.manual_subcategoria_id.toString(),
+        categoriaId: props.manual.carpeta?.subcategoria?.categoria?.id?.toString() || '',
+        subcategoriaId: props.manual.carpeta?.subcategoria?.id?.toString() || '',
+        carpetaId: props.manual.manual_carpeta_id.toString(),
         file: null,
         puestosAutorizadosIds: props.manual.puestos_autorizados?.map(p => p.id) || [],
         numeroActa: props.manual.numero_acta || '',
@@ -178,6 +198,7 @@ watch(() => props.show, (newShow) => {
         titulo: '',
         categoriaId: '',
         subcategoriaId: '',
+        carpetaId: '',
         file: null,
         puestosAutorizadosIds: [],
         numeroActa: '',
@@ -195,7 +216,7 @@ watch(() => props.show, (newShow) => {
       
       <!-- Header modal -->
       <div class="p-6 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
-        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ manualForm.id ? '✏️ Editar Metadatos del Manual' : '➕ Subir Nuevo Manual PDF' }}</h3>
+        <h3 class="font-extrabold text-base tracking-tight font-['Outfit']">{{ manualForm.id ? '✏️ Editar Metadatos de la Normativa' : '➕ Subir Nueva Normativa PDF' }}</h3>
         <button @click="closeModal" class="text-2xl text-slate-400 hover:text-slate-650 transition-colors">×</button>
       </div>
 
@@ -213,21 +234,29 @@ watch(() => props.show, (newShow) => {
           />
         </div>
 
-        <!-- Selección Categoría / Subcategoría -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Selección Gaveta / Portafolio / Carpeta -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="space-y-1.5">
-            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Fólder Principal</label>
-            <select v-model="manualForm.categoriaId" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none">
-              <option value="">Selecciona Fólder...</option>
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Gaveta</label>
+            <select v-model="manualForm.categoriaId" @change="manualForm.subcategoriaId = ''; manualForm.carpetaId = ''" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none">
+              <option value="">Selecciona Gaveta...</option>
               <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
             </select>
           </div>
           
           <div class="space-y-1.5">
-            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Subfólder de Clasificación</label>
-            <select v-model="manualForm.subcategoriaId" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" :disabled="!manualForm.categoriaId">
-              <option value="">Selecciona Subfólder...</option>
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Portafolio</label>
+            <select v-model="manualForm.subcategoriaId" @change="manualForm.carpetaId = ''" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" :disabled="!manualForm.categoriaId">
+              <option value="">Selecciona Portafolio...</option>
               <option v-for="s in subcategoriasDisponiblesForm" :key="s.id" :value="s.id">{{ s.nombre }}</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase ml-1">Carpeta de Destino</label>
+            <select v-model="manualForm.carpetaId" class="w-full p-3 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none" :disabled="!manualForm.subcategoriaId">
+              <option value="">Selecciona Carpeta...</option>
+              <option v-for="car in carpetasDisponiblesForm" :key="car.id" :value="car.id">{{ car.nombre }}</option>
             </select>
           </div>
         </div>
@@ -291,7 +320,7 @@ watch(() => props.show, (newShow) => {
               <span class="text-[0.7rem] font-bold">{{ p.nombre }}</span>
             </label>
           </div>
-          <p class="text-[0.65rem] text-slate-400 italic mt-1 ml-1">Los administradores siempre tienen permiso total independientemente de los puestos asignados aquí.</p>
+          <p class="text-[0.65rem] text-slate-400 italic mt-1 ml-1">Los colaboradores autorizados deben estar asignados a estos puestos para visualizar la normativa en su Biblioteca.</p>
         </div>
 
       </div>

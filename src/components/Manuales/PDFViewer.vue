@@ -20,7 +20,8 @@ interface Actualizacion {
 
 interface Manual {
   id: number
-  manual_subcategoria_id: number
+  manual_subcategoria_id?: number
+  manual_carpeta_id?: number
   titulo: string
   file_path: string
   total_paginas: number
