@@ -159,15 +159,15 @@ const getVigenciaStatus = (manual: Manual) => {
   today.setHours(0, 0, 0, 0)
   const vigenciaDate = new Date(manual.fecha_vigencia)
   
-  if (vigenciaDate >= today) {
+  if (today >= vigenciaDate) {
     return {
       label: 'Vigente',
       class: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/10'
     }
   } else {
     return {
-      label: 'Vencido',
-      class: 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/10'
+      label: 'No Vigente',
+      class: 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/10'
     }
   }
 }
@@ -388,7 +388,7 @@ onMounted(() => {
                           <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6rem] text-slate-400 dark:text-slate-555">
                             <span v-if="doc.numero_acta" class="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded font-bold">📜 {{ doc.numero_acta }}</span>
                             <span v-if="doc.fecha_aprobacion">📅 Aprob: {{ formatDate(doc.fecha_aprobacion) }}</span>
-                            <span v-if="doc.fecha_vigencia">⏳ Vence: {{ formatDate(doc.fecha_vigencia) }}</span>
+                            <span v-if="doc.fecha_vigencia">⏳ Vigencia: {{ formatDate(doc.fecha_vigencia) }}</span>
                           </div>
 
                           <div v-if="getLatestActiveUpdate(doc)" class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1" @click.stop>
