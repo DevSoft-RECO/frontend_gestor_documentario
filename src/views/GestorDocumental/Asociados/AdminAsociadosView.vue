@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -21,6 +21,10 @@ const asociados = ref<Asociado[]>([])
 const isLoading = ref(true)
 const searchQuery = ref('')
 
+const currentPage = ref(1)
+const totalAsociados = ref(0)
+const itemsPerPage = ref(10)
+
 // Control del Modal de Confirmación
 const showConfirmModal = ref(false)
 const selectedAsociado = ref<Asociado | null>(null)
@@ -35,11 +39,13 @@ const getHeaders = () => {
 const loadAsociados = async () => {
   isLoading.value = true
   try {
-    const res = await fetch(`${API_URL}/api/gestor/admin/asociados`, {
+    const res = await fetch(`${API_URL}/api/gestor/admin/asociados?page=${currentPage.value}&limit=${itemsPerPage.value}&search=${encodeURIComponent(searchQuery.value)}`, {
       headers: getHeaders()
     })
     if (res.ok) {
-      asociados.value = await res.json()
+      const data = await res.json()
+      asociados.value = data.asociados
+      totalAsociados.value = data.total
     } else {
       if (res.status === 403) {
         router.push('/unauthorized')
@@ -52,17 +58,19 @@ const loadAsociados = async () => {
   }
 }
 
-// Filtro en tiempo real por Nombre, DPI o Código Cliente
-const asociadosFiltrados = computed(() => {
-  const query = searchQuery.value.toLowerCase().trim()
-  if (!query) return asociados.value
+// Filtro por búsqueda del lado del servidor
+const asociadosFiltrados = computed(() => asociados.value)
 
-  return asociados.value.filter(a => 
-    a.nombre_completo.toLowerCase().includes(query) ||
-    a.dpi.includes(query) ||
-    (a.codigo_cliente && a.codigo_cliente.toLowerCase().includes(query))
-  )
+// Recargar al buscar
+watch(searchQuery, () => {
+  currentPage.value = 1
+  loadAsociados()
 })
+
+const changePage = (page: number) => {
+  currentPage.value = page
+  loadAsociados()
+}
 
 // Abrir diálogo de eliminación
 const triggerDelete = (asociado: Asociado) => {
@@ -110,7 +118,7 @@ onMounted(() => {
 
 <template>
   <div class="admin-asociados-view min-h-[calc(100vh-64px)] bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans'] p-8 text-slate-800 dark:text-slate-100 transition-colors duration-300">
-    <div class="max-w-7xl mx-auto space-y-8">
+    <div class="w-full space-y-8">
       
       <!-- ENCABEZADO -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-6">
@@ -124,11 +132,11 @@ onMounted(() => {
         <div class="flex gap-4">
           <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 px-5 py-3 rounded-2xl shadow-sm text-center">
             <p class="text-[0.6rem] font-bold text-slate-400 uppercase tracking-wider">Total Asociados</p>
-            <p class="text-lg font-black mt-0.5 text-indigo-600 dark:text-indigo-400 font-mono">{{ asociados.length }}</p>
+            <p class="text-lg font-black mt-0.5 text-indigo-600 dark:text-indigo-400 font-mono">{{ totalAsociados }}</p>
           </div>
           <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 px-5 py-3 rounded-2xl shadow-sm text-center">
             <p class="text-[0.6rem] font-bold text-slate-400 uppercase tracking-wider">Buscados / Filtrados</p>
-            <p class="text-lg font-black mt-0.5 text-emerald-500 font-mono">{{ asociadosFiltrados.length }}</p>
+            <p class="text-lg font-black mt-0.5 text-emerald-500 font-mono">{{ totalAsociados }}</p>
           </div>
         </div>
       </div>
@@ -170,7 +178,7 @@ onMounted(() => {
             <tbody class="divide-y divide-slate-150 dark:divide-slate-800">
               <tr v-for="asociado in asociadosFiltrados" :key="asociado.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
                 <td class="p-4 font-mono text-slate-500 dark:text-slate-400">
-                  <p class="font-extrabold text-slate-700 dark:text-slate-300">{{ asociado.dpi }}</p>
+                  <p class="font-extrabold text-slate-700 dark:text-slate-355">{{ asociado.dpi }}</p>
                   <p class="text-[0.6rem] text-slate-400">{{ asociado.codigo_cliente || 'N/A' }}</p>
                 </td>
                 <td class="p-4 font-bold text-slate-800 dark:text-slate-100">
@@ -229,6 +237,35 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
+
+        <!-- PAGINACIÓN -->
+        <div v-if="totalAsociados > itemsPerPage" class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 p-4">
+          <div class="text-xs text-slate-500 dark:text-slate-400">
+            Mostrando <span class="font-bold text-slate-800 dark:text-slate-200">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> a 
+            <span class="font-bold text-slate-800 dark:text-slate-200">{{ Math.min(currentPage * itemsPerPage, totalAsociados) }}</span> de 
+            <span class="font-bold text-slate-800 dark:text-slate-200">{{ totalAsociados }}</span> asociados
+          </div>
+          <div class="flex items-center gap-2">
+            <button 
+              @click="changePage(currentPage - 1)" 
+              :disabled="currentPage === 1"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-950 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+            >
+              Anterior
+            </button>
+            <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">
+              Pág. {{ currentPage }} de {{ Math.ceil(totalAsociados / itemsPerPage) }}
+            </span>
+            <button 
+              @click="changePage(currentPage + 1)" 
+              :disabled="currentPage >= Math.ceil(totalAsociados / itemsPerPage)"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-950 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>
