@@ -196,7 +196,34 @@ const openModalCategoria = (cat: Categoria | null = null) => {
   showModalCategoria.value = true
 }
 
+const searchPuestoQuery = ref('')
+
+const filteredPuestos = computed(() => {
+  const query = searchPuestoQuery.value.trim().toLowerCase()
+  if (!query) return puestos.value
+  return puestos.value.filter(p => p.nombre.toLowerCase().includes(query))
+})
+
+const selectAllPuestos = () => {
+  const currentFiltered = filteredPuestos.value
+  const currentIds = [...formSubcategoria.value.puestos_ids]
+  currentFiltered.forEach(p => {
+    if (!currentIds.includes(p.id)) {
+      currentIds.push(p.id)
+    }
+  })
+  formSubcategoria.value.puestos_ids = currentIds
+}
+
+const deselectAllPuestos = () => {
+  const currentFiltered = filteredPuestos.value
+  formSubcategoria.value.puestos_ids = formSubcategoria.value.puestos_ids.filter(
+    id => !currentFiltered.some(p => p.id === id)
+  )
+}
+
 const openModalSubcategoria = (sub: Subcategoria | null = null) => {
+  searchPuestoQuery.value = ''
   editingSubcategoria.value = sub
   if (sub) {
     formSubcategoria.value = { 
@@ -338,8 +365,22 @@ onMounted(() => {
         </div>
         <div class="form-group">
           <label>Puestos con acceso a crear carpeta</label>
+          
+          <div class="puestos-search-bar">
+            <input 
+              v-model="searchPuestoQuery" 
+              type="text" 
+              placeholder="🔍 Buscar puesto por nombre..." 
+              class="puesto-search-input"
+            />
+            <div class="puesto-actions-buttons">
+              <button type="button" @click="selectAllPuestos" class="btn-mini-action">Seleccionar todos</button>
+              <button type="button" @click="deselectAllPuestos" class="btn-mini-action">Limpiar todos</button>
+            </div>
+          </div>
+
           <div class="puestos-selector">
-            <div v-for="puesto in puestos" :key="puesto.id" class="puesto-option">
+            <div v-for="puesto in filteredPuestos" :key="puesto.id" class="puesto-option">
               <input 
                 type="checkbox" 
                 :id="'puesto-' + puesto.id" 
@@ -582,5 +623,44 @@ onMounted(() => {
   width: 100%;
   max-width: 500px; /* Un poco más ancho para el selector */
   padding: 2rem;
+}
+
+.puestos-search-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.puesto-search-input {
+  width: 100% !important;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 0.85rem !important;
+  outline: none;
+}
+.puesto-search-input:focus {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+.puesto-actions-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.btn-mini-action {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-mini-action:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 </style>
