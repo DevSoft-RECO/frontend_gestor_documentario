@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import Swal from 'sweetalert2'
 import PDFViewer from '@/components/Manuales/PDFViewer.vue'
 import ManualFormModal from '@/components/Manuales/ManualFormModal.vue'
 import ActualizacionFormModal from '@/components/Manuales/ActualizacionFormModal.vue'
@@ -121,7 +122,6 @@ const getHeaders = () => {
   return { 'Authorization': `Bearer ${token}` }
 }
 
-// --- Data Fetching ---
 const loadAllData = async () => {
   isLoading.value = true
   try {
@@ -132,39 +132,9 @@ const loadAllData = async () => {
     ])
 
     if (resPuestos.ok) puestos.value = await resPuestos.json()
+    if (resAdminCats.ok) categorias.value = await resAdminCats.json()
     
-    if (resAdminCats.ok) {
-      const data = await resAdminCats.json()
-      categorias.value = data
-      
-      // Aplanar la lista de manuales cargados para poder listarlos en la tabla
-      const flatDocs: Manual[] = []
-      data.forEach((cat: Categoria) => {
-        cat.subcategorias?.forEach(sub => {
-          sub.carpetas?.forEach(carp => {
-            const docs = (carp as any).documentos || []
-            docs.forEach((doc: any) => {
-              flatDocs.push({
-                ...doc,
-                carpeta: {
-                  id: carp.id,
-                  nombre: carp.nombre,
-                  subcategoria: {
-                    id: sub.id,
-                    nombre: sub.nombre,
-                    categoria: {
-                      id: cat.id,
-                      nombre: cat.nombre
-                    }
-                  }
-                }
-              })
-            })
-          })
-        })
-      })
-      manuales.value = flatDocs
-    }
+    await loadManuales()
   } catch (err) {
     console.error('Error al cargar datos de administración', err)
   } finally {
@@ -391,6 +361,85 @@ const formatDate = (dateStr?: string) => {
   return `${day}/${month}/${year}`
 }
 
+const currentPage = ref(1)
+const totalManuales = ref(0)
+const itemsPerPage = ref(10)
+
+const loadManuales = async () => {
+  try {
+    const headers = getHeaders()
+    const res = await fetch(`${API_URL}/api/manuales/admin/documentos?page=${currentPage.value}&limit=${itemsPerPage.value}`, { headers })
+    if (res.ok) {
+      const data = await res.json()
+      manuales.value = data.documentos.map((doc: any) => ({
+        ...doc,
+        carpeta: doc.carpeta ? {
+          id: doc.carpeta.id,
+          nombre: doc.carpeta.nombre,
+          subcategoria: doc.carpeta.subcategoria ? {
+            id: doc.carpeta.subcategoria.id,
+            nombre: doc.carpeta.subcategoria.nombre,
+            categoria: doc.carpeta.subcategoria.categoria ? {
+              id: doc.carpeta.subcategoria.categoria.id,
+              nombre: doc.carpeta.subcategoria.categoria.nombre
+            } : undefined
+          } : undefined
+        } : undefined
+      }))
+      totalManuales.value = data.total
+    }
+  } catch (err) {
+    console.error('Error al cargar manuales paginados', err)
+  }
+}
+
+const changePage = (page: number) => {
+  currentPage.value = page
+  loadManuales()
+}
+
+const verPuestosAutorizados = (doc: Manual) => {
+  const isDark = document.documentElement.classList.contains('dark')
+  const itemBg = isDark ? '#1e293b' : '#f1f5f9'
+  const itemTextColor = isDark ? '#f1f5f9' : '#1e293b'
+  const itemBorder = isDark ? '#334155' : '#e2e8f0'
+  const popupBg = isDark ? '#0f172a' : '#ffffff'
+  const titleColor = isDark ? '#ffffff' : '#1e293b'
+
+  const listHtml = doc.puestos_autorizados && doc.puestos_autorizados.length > 0
+    ? `<ul style="text-align: left; list-style-type: none; padding: 0; margin: 0;">
+        ${doc.puestos_autorizados.map(p => `
+          <li style="padding: 8px 12px; margin-bottom: 6px; background-color: ${itemBg}; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: ${itemTextColor}; display: flex; align-items: center; gap: 8px; border: 1px solid ${itemBorder};">
+            <span style="color: #6366f1;">💼</span> ${p.nombre}
+          </li>
+        `).join('')}
+       </ul>`
+    : `<p style="color: #ef4444; font-weight: bold; font-style: italic; text-align: center;">🚫 Ninguno (Privado)</p>`
+
+  Swal.fire({
+    title: 'Cargos Autorizados',
+    html: `
+      <div style="margin-top: 10px;">
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; text-align: left;">
+          Puestos autorizados para visualizar el manual <strong>"${doc.titulo}"</strong>:
+        </p>
+        <div style="max-h: 300px; overflow-y: auto; padding-right: 4px;">
+          ${listHtml}
+        </div>
+      </div>
+    `,
+    icon: 'info',
+    background: popupBg,
+    color: titleColor,
+    confirmButtonText: 'Entendido',
+    confirmButtonColor: '#4f46e5',
+    customClass: {
+      popup: 'rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl',
+      title: 'font-extrabold font-["Outfit"]',
+    }
+  })
+}
+
 onMounted(() => {
   // Proteger la vista a nivel de código
   if (!authStore.hasPermission('admin_biblioteca')) {
@@ -521,15 +570,18 @@ onMounted(() => {
                   </td>
                   <td class="p-4 font-bold font-mono">{{ doc.total_paginas }} págs</td>
                   <td class="p-4">
-                    <div class="flex flex-wrap gap-1.5 max-w-[320px]">
-                      <span 
-                        v-for="p in doc.puestos_autorizados" 
-                        :key="p.id" 
-                        class="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/20 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/10 font-bold text-[0.6rem]"
+                    <div class="flex items-center">
+                      <button 
+                        v-if="doc.puestos_autorizados && doc.puestos_autorizados.length > 0"
+                        @click="verPuestosAutorizados(doc)"
+                        class="px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/10 font-bold text-[0.7rem] hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition-colors flex items-center gap-1.5"
                       >
-                        {{ p.nombre }}
-                      </span>
-                      <span v-if="!doc.puestos_autorizados || doc.puestos_autorizados.length === 0" class="text-[0.65rem] italic text-red-500 font-bold">🚫 Ninguno (Privado)</span>
+                        <span>👁️ Ver</span>
+                        <span class="bg-indigo-150 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.2 rounded-full text-[0.6rem] font-black">
+                          {{ doc.puestos_autorizados.length }}
+                        </span>
+                      </button>
+                      <span v-else class="text-[0.65rem] italic text-red-500 font-bold">🚫 Ninguno (Privado)</span>
                     </div>
                   </td>
                   <td class="p-4">
@@ -550,6 +602,35 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
+          
+          <!-- PAGINACIÓN -->
+          <div v-if="totalManuales > itemsPerPage" class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 p-4">
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              Mostrando <span class="font-bold text-slate-800 dark:text-slate-200">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> a 
+              <span class="font-bold text-slate-800 dark:text-slate-200">{{ Math.min(currentPage * itemsPerPage, totalManuales) }}</span> de 
+              <span class="font-bold text-slate-800 dark:text-slate-200">{{ totalManuales }}</span> normativas
+            </div>
+            <div class="flex items-center gap-2">
+              <button 
+                @click="changePage(currentPage - 1)" 
+                :disabled="currentPage === 1"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-950 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+              >
+                Anterior
+              </button>
+              <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                Pág. {{ currentPage }} de {{ Math.ceil(totalManuales / itemsPerPage) }}
+              </span>
+              <button 
+                @click="changePage(currentPage + 1)" 
+                :disabled="currentPage >= Math.ceil(totalManuales / itemsPerPage)"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-slate-950 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 
