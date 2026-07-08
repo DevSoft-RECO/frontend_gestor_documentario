@@ -44,7 +44,7 @@ const loadAsociados = async () => {
     })
     if (res.ok) {
       const data = await res.json()
-      asociados.value = data.asociados
+      asociados.value = data.asociados || []
       totalAsociados.value = data.total
     } else {
       if (res.status === 403) {
@@ -59,7 +59,7 @@ const loadAsociados = async () => {
 }
 
 // Filtro por búsqueda del lado del servidor
-const asociadosFiltrados = computed(() => asociados.value)
+const asociadosFiltrados = computed(() => asociados.value || [])
 
 // Recargar al buscar
 watch(searchQuery, () => {
