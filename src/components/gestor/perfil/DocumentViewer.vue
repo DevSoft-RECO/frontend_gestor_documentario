@@ -522,7 +522,9 @@ watch(zoomLevel, () => {
             
             <div class="p-5 space-y-4">
               <div>
-                <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase mb-2 tracking-wider">Página Destino</label>
+                <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase mb-2 tracking-wider">
+                  {{ actionType === 'insert' ? 'Insertar páginas después de' : 'Página Destino' }}
+                </label>
                 <div class="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-inner">
                   <button @click="targetPage > 1 ? targetPage-- : null" class="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700">−</button>
                   <input type="number" v-model="targetPage" min="1" :max="totalPaginas" class="flex-1 bg-transparent text-center font-extrabold text-sm outline-none" />
