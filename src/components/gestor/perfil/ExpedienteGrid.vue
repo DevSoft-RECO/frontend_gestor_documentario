@@ -86,13 +86,13 @@ const resetFilters = () => {
         <div class="control-field">
           <label class="control-label">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span>Filtrar por Fólder</span>
+            <span>Filtrar por Portafolio</span>
           </label>
           <div class="select-wrapper">
             <select v-model="selectedFolderId" class="premium-select">
-              <option value="all">📂 Todos los Fólderes</option>
+              <option value="all">📂 Todos los Portafolios</option>
               <option v-for="grupo in props.expedienteAgrupado" :key="grupo.id" :value="grupo.id">
-                📁 Fólder: {{ grupo.nombre }}
+                📁 Portafolio: {{ grupo.nombre }}
               </option>
             </select>
           </div>
@@ -148,7 +148,7 @@ const resetFilters = () => {
         <div class="hanging-folder-tab">
           <div class="tab-label">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span>FÓLDER: {{ grupo.nombre }}</span>
+            <span>Portafolio: {{ grupo.nombre }}</span>
           </div>
           <span class="tab-badge">{{ grupo.documentos.length }} {{ grupo.documentos.length === 1 ? 'Doc' : 'Docs' }}</span>
         </div>

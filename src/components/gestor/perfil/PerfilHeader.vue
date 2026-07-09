@@ -116,7 +116,7 @@ const updateAsociado = async () => {
           <div class="profile-details">
             <div class="name-section">
               <span class="category-tag-premium">
-                <span class="pulse-dot"></span> Portafolio de Asociado Activo
+                <span class="pulse-dot"></span> Gaveta de Asociado Activo
               </span>
               <h1>{{ props.asociado.nombre_completo }}</h1>
             </div>
