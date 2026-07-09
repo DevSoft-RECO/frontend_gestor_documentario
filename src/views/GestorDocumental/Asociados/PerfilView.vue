@@ -225,6 +225,7 @@ onMounted(() => {
         v-if="showUploadModal"
         :categoriasMaster="categoriasMaster"
         :asociadoId="route.params.id as string"
+        :existingSubcategoriaIds="expedientesBrutos.map(d => d.subcategoria_id)"
         @close="showUploadModal = false"
         @uploadSuccess="handleUploadSuccess"
       />

@@ -26,6 +26,7 @@ interface SubcategoriaMaster {
 const props = defineProps<{
   categoriasMaster: CategoriaMaster[]
   asociadoId: string
+  existingSubcategoriaIds?: number[]
 }>()
 
 const emit = defineEmits(['close', 'uploadSuccess'])
@@ -40,6 +41,11 @@ const uploadForm = ref({
   numero_documento: '',
   fecha_vencimiento: '',
   file: null as File | null
+})
+
+const alreadyExists = computed(() => {
+  if (!props.existingSubcategoriaIds || !uploadForm.value.subcategoria_id) return false
+  return props.existingSubcategoriaIds.includes(Number(uploadForm.value.subcategoria_id))
 })
 
 const canSeeSubcategoria = (sub: SubcategoriaMaster) => {
@@ -122,18 +128,38 @@ const uploadDocument = () => {
     <div class="glass-card modal-content slide-up">
       <div class="modal-header">
         <div class="header-main">
-          <div class="icon-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <div class="icon-circle" :class="{ 'icon-warning': alreadyExists }">
+            <svg v-if="alreadyExists" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
           </div>
           <div>
-            <h2>Añadir nuevo folder de datos</h2>
-            <p class="modal-desc">Clasifica el primer PDF para crear este nuevo fólder en el expediente.</p>
+            <h2>{{ alreadyExists ? 'Reemplazar documento existente' : 'Añadir nuevo folder de datos' }}</h2>
+            <p class="modal-desc">
+              {{ alreadyExists 
+                ? 'El tipo de documento ya existe. Al subir uno nuevo reemplazará el archivo completo.' 
+                : 'Clasifica el primer PDF para crear este nuevo fólder en el expediente.' }}
+            </p>
           </div>
         </div>
         <button @click="emit('close')" class="btn-close">×</button>
       </div>
       
       <div class="modal-body-scroll">
+        <!-- Banner de Advertencia si ya existe -->
+        <div v-if="alreadyExists" class="warning-alert-banner slide-down">
+          <div class="warning-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="warning-alert-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="warning-alert-content">
+            <h4>¡Atención! Este tipo de documento ya está registrado</h4>
+            <p>
+              Si vuelve a cargar otro archivo, se <strong>reemplazará todo el archivo completo</strong> y se descartarán las modificaciones (inserciones, eliminaciones, reemplazos) hechas anteriormente sobre este documento. No se creará una sección duplicada. Para hacer modificaciones utilice las opciones dentro del visor de archivos
+            </p>
+          </div>
+        </div>
+
         <div class="form-grid">
           <!-- Columna 1: Clasificación Principal -->
           <div class="form-section">
@@ -198,9 +224,10 @@ const uploadDocument = () => {
         <button 
           @click="uploadDocument" 
           class="btn-primary" 
+          :class="{ 'btn-warning': alreadyExists }"
           :disabled="!uploadForm.file || !uploadForm.numero_documento?.trim()"
         >
-          Crear Fólder Maestro
+          {{ alreadyExists ? 'Reemplazar Archivo Completo' : 'Crear Fólder Maestro' }}
         </button>
       </div>
     </div>
@@ -310,4 +337,67 @@ const uploadDocument = () => {
 :root.dark .btn-secondary:hover { background: #334155; color: white; }
 
 :root.dark .modal-body-scroll::-webkit-scrollbar-thumb { background: #334155; }
+
+/* warning-alert and button-warning custom styles */
+.warning-alert-banner {
+  display: flex;
+  gap: 1rem;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-left: 4px solid #d97706;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+.warning-icon-wrapper {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 0.1rem;
+}
+.warning-alert-icon {
+  width: 24px;
+  height: 24px;
+  color: #d97706;
+}
+.warning-alert-content h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #78350f;
+}
+.warning-alert-content p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+:root.dark .warning-alert-banner {
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.2);
+  border-left-color: #f59e0b;
+}
+:root.dark .warning-alert-content h4 {
+  color: #fef3c7;
+}
+:root.dark .warning-alert-content p {
+  color: #fde68a;
+}
+
+.icon-circle.icon-warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+:root.dark .icon-circle.icon-warning {
+  background: rgba(217, 119, 6, 0.15);
+  color: #f59e0b;
+}
+
+.btn-primary.btn-warning {
+  background: #d97706;
+}
+.btn-primary.btn-warning:hover:not(:disabled) {
+  background: #b45309;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+}
 </style>
