@@ -51,6 +51,7 @@ const opForm = ref({
   file: null as File | null
 })
 const isProcessing = ref(false)
+const isEdicionExpanded = ref(false)
 
 // Gestión de permisos para edición
 const availableActions = computed(() => {
@@ -515,12 +516,18 @@ watch(zoomLevel, () => {
         <div class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           <!-- SECCIÓN DE OPERACIONES -->
           <div v-if="availableActions.length > 0" class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
-            <div class="p-4 bg-slate-100 dark:bg-slate-900/80 flex items-center gap-2 text-xs font-extrabold text-slate-700 dark:text-slate-300">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-              <span>Edición de Documento</span>
+            <div @click="isEdicionExpanded = !isEdicionExpanded" class="p-4 bg-slate-100 dark:bg-slate-900/80 flex items-center justify-between cursor-pointer text-xs font-extrabold text-slate-700 dark:text-slate-300 select-none hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors">
+              <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <span>Edición de Documento</span>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   :class="['transition-transform duration-200', isEdicionExpanded ? 'rotate-180' : '']">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
             </div>
             
-            <div class="p-5 space-y-4">
+            <div v-show="isEdicionExpanded" class="p-5 space-y-4 border-t border-slate-100 dark:border-slate-800">
               <div>
                 <label class="block text-[0.65rem] font-extrabold text-slate-400 uppercase mb-2 tracking-wider">
                   {{ actionType === 'insert' ? 'Insertar páginas después de' : 'Página Destino' }}
