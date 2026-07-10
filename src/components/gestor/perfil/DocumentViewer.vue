@@ -457,6 +457,80 @@ watch(zoomLevel, () => {
   reRenderPages()
 })
 
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    const day = String(date.getUTCDate()).padStart(2, '0')
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const year = date.getUTCFullYear()
+    return `${day}/${month}/${year}`
+  } catch (e) {
+    return ''
+  }
+}
+
+// Edición de índices existentes
+const editingIndiceId = ref<number | null>(null)
+const editForm = ref({
+  etiqueta: '',
+  numero_documento: '',
+  fecha_vencimiento: ''
+})
+const isSavingIndice = ref(false)
+
+const startEdit = (indice: IndicePagina, event: Event) => {
+  event.stopPropagation()
+  editingIndiceId.value = indice.id
+  editForm.value = {
+    etiqueta: indice.etiqueta,
+    numero_documento: indice.numero_documento || '',
+    fecha_vencimiento: indice.fecha_vencimiento ? new Date(indice.fecha_vencimiento).toISOString().split('T')[0] : ''
+  }
+}
+
+const cancelEdit = (event?: Event) => {
+  if (event) event.stopPropagation()
+  editingIndiceId.value = null
+}
+
+const saveEdit = async (indiceId: number, event: Event) => {
+  event.stopPropagation()
+  if (!editForm.value.etiqueta.trim()) {
+    alert("La etiqueta no puede estar vacía")
+    return
+  }
+
+  isSavingIndice.value = true
+  try {
+    const token = sessionStorage.getItem('access_token') || ''
+    const res = await fetch(`${API_URL}/api/gestor/indices/${indiceId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        etiqueta: editForm.value.etiqueta,
+        numero_documento: editForm.value.numero_documento,
+        fecha_vencimiento: editForm.value.fecha_vencimiento
+      })
+    })
+
+    if (res.ok) {
+      await loadIndices()
+      editingIndiceId.value = null
+    } else {
+      const errData = await res.json()
+      alert(`Error: ${errData.error || errData.detalle}`)
+    }
+  } catch (e) {
+    console.error("Error al actualizar índice:", e)
+  } finally {
+    isSavingIndice.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -583,21 +657,59 @@ watch(zoomLevel, () => {
             <h4 class="text-[0.7rem] font-extrabold text-slate-400 uppercase tracking-widest pl-1">Índices Generados</h4>
             <div class="space-y-2.5">
               <div v-for="indice in indicesActuales" :key="indice.id" 
-                   @click="jumpToPage(indice.pagina_inicio)"
+                   @click="editingIndiceId !== indice.id ? jumpToPage(indice.pagina_inicio) : null"
                    :class="[
-                     'group p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]',
-                     currentPage >= indice.pagina_inicio ? 'bg-sky-50/50 dark:bg-sky-900/10 border-sky-200 dark:border-sky-800/50' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 shadow-sm'
+                     'group p-4 rounded-2xl border transition-all shadow-sm',
+                     editingIndiceId === indice.id ? 'bg-white dark:bg-slate-900 border-sky-500 ring-2 ring-sky-500/20' : 
+                     (currentPage >= indice.pagina_inicio ? 'bg-sky-50/50 dark:bg-sky-900/10 border-sky-200 dark:border-sky-800/50 cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 cursor-pointer hover:scale-[1.02] active:scale-[0.98]')
                    ]">
-                <div class="flex gap-4">
+                <!-- Modo Edición -->
+                <div v-if="editingIndiceId === indice.id" class="space-y-3" @click.stop>
+                  <div class="text-[0.65rem] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-1">Editar Índice - Pág {{ indice.pagina_inicio }}</div>
+                  
+                  <div class="space-y-2">
+                    <input type="text" v-model="editForm.etiqueta" placeholder="Etiqueta..." class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20" />
+                    
+                    <input type="text" v-model="editForm.numero_documento" placeholder="Número de Documento (opcional)" class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20" />
+                    
+                    <div class="space-y-1">
+                      <label class="block text-[0.6rem] font-bold text-slate-400 uppercase">Fecha Vencimiento (opcional)</label>
+                      <input type="date" v-model="editForm.fecha_vencimiento" class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20" />
+                    </div>
+                  </div>
+
+                  <div class="flex gap-2 justify-end pt-1">
+                    <button @click="cancelEdit" class="px-2.5 py-1 text-[0.75rem] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-all">
+                      Cancelar
+                    </button>
+                    <button @click="saveEdit(indice.id, $event)" :disabled="isSavingIndice" class="px-2.5 py-1 text-[0.75rem] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm transition-all flex items-center gap-1">
+                      <span v-if="isSavingIndice" class="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Modo Vista -->
+                <div v-else class="flex gap-4 items-start relative">
                   <span class="text-[0.6rem] font-black text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/30 px-2 py-1 rounded-md h-fit">Pág {{ indice.pagina_inicio }}</span>
-                  <div class="flex-1 min-w-0">
+                  <div class="flex-1 min-w-0 pr-6">
                     <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1 truncate">{{ indice.etiqueta }}</p>
                     <p class="text-[0.65rem] text-slate-500 dark:text-slate-400 flex items-center gap-2 italic">
                       <span class="font-mono">#{{ indice.numero_documento || 'S/N' }}</span>
                       <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
                       <span>{{ indice.tipo_movimiento }}</span>
+                      <template v-if="indice.fecha_vencimiento">
+                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        <span class="text-red-500 dark:text-red-400 font-semibold flex items-center gap-1">
+                          Vence: {{ formatDate(indice.fecha_vencimiento) }}
+                        </span>
+                      </template>
                     </p>
                   </div>
+                  <!-- Botón Editar con Lápiz (Solo Super Admin) -->
+                  <button v-if="authStore.hasRole('Super Admin')" @click="startEdit(indice, $event)" class="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 opacity-0 group-hover:opacity-100 transition-all duration-150" title="Editar Índice">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </button>
                 </div>
               </div>
               <div v-if="indicesActuales.length === 0" class="py-10 text-center space-y-3 opacity-40">
