@@ -71,9 +71,17 @@ watch(availableActions, (newActions) => {
 
 // PDF.js State
 let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
-let currentObserver: IntersectionObserver | null = null
+let renderObserver: IntersectionObserver | null = null
+let pageTrackerObserver: IntersectionObserver | null = null
 const pagesContainer = ref<HTMLElement | null>(null)
 const scrollContainer = ref<HTMLElement | null>(null)
+
+const activeIndiceId = computed(() => {
+  if (indicesActuales.value.length === 0) return null
+  const sorted = [...indicesActuales.value].sort((a, b) => b.pagina_inicio - a.pagina_inicio)
+  const active = sorted.find(idx => currentPage.value >= idx.pagina_inicio)
+  return active ? active.id : null
+})
 
 const loadIndices = async () => {
   try {
@@ -142,10 +150,14 @@ const renderPDF = async () => {
   isRendering.value = true
   downloadProgress.value = 0
   
-  // Limpiar observer anterior si existe
-  if (currentObserver) {
-    currentObserver.disconnect()
-    currentObserver = null
+  // Limpiar observers anteriores si existen
+  if (renderObserver) {
+    renderObserver.disconnect()
+    renderObserver = null
+  }
+  if (pageTrackerObserver) {
+    pageTrackerObserver.disconnect()
+    pageTrackerObserver = null
   }
   
   try {
@@ -214,10 +226,14 @@ const renderPDF = async () => {
 const reRenderPages = async () => {
   if (!pdfDoc || !pagesContainer.value) return
   
-  // Limpiar observer anterior
-  if (currentObserver) {
-    currentObserver.disconnect()
-    currentObserver = null
+  // Limpiar observers anteriores
+  if (renderObserver) {
+    renderObserver.disconnect()
+    renderObserver = null
+  }
+  if (pageTrackerObserver) {
+    pageTrackerObserver.disconnect()
+    pageTrackerObserver = null
   }
   
   pagesContainer.value.innerHTML = ''
@@ -251,15 +267,12 @@ const reRenderPages = async () => {
 }
 
 const setupIntersectionObserver = () => {
-  currentObserver = new IntersectionObserver((entries) => {
+  renderObserver = new IntersectionObserver((entries) => {
     entries.forEach(async (entry) => {
       const pageWrapper = entry.target as HTMLElement
       const pageNum = parseInt(pageWrapper.dataset.pageNumber || '1')
       
       if (entry.isIntersecting) {
-        currentPage.value = pageNum
-        targetPage.value = pageNum
-        
         if (pageWrapper.dataset.rendered === 'false') {
           pageWrapper.dataset.rendered = 'rendering'
           
@@ -294,7 +307,28 @@ const setupIntersectionObserver = () => {
     rootMargin: '600px 0px' // Precargar páginas 600px antes de que sean visibles
   })
 
-  pagesContainer.value?.querySelectorAll('.pdf-page-wrapper').forEach(p => currentObserver!.observe(p))
+  pageTrackerObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const pageWrapper = entry.target as HTMLElement
+        const pageNum = parseInt(pageWrapper.dataset.pageNumber || '1')
+        currentPage.value = pageNum
+        targetPage.value = pageNum
+      }
+    })
+  }, {
+    root: scrollContainer.value,
+    threshold: 0,
+    rootMargin: '-50% 0px -50% 0px' // Detectar páginas cruzando el centro del visor
+  })
+
+  const pages = pagesContainer.value?.querySelectorAll('.pdf-page-wrapper')
+  if (pages) {
+    pages.forEach(p => {
+      renderObserver!.observe(p)
+      pageTrackerObserver!.observe(p)
+    })
+  }
 }
 
 const jumpToPage = (pageNum: number) => {
@@ -661,7 +695,7 @@ const saveEdit = async (indiceId: number, event: Event) => {
                    :class="[
                      'group p-4 rounded-2xl border transition-all shadow-sm',
                      editingIndiceId === indice.id ? 'bg-white dark:bg-slate-900 border-sky-500 ring-2 ring-sky-500/20' : 
-                     (currentPage >= indice.pagina_inicio ? 'bg-sky-50/50 dark:bg-sky-900/10 border-sky-200 dark:border-sky-800/50 cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 cursor-pointer hover:scale-[1.02] active:scale-[0.98]')
+                     (activeIndiceId === indice.id ? 'bg-sky-50/50 dark:bg-sky-900/10 border-sky-200 dark:border-sky-800/50 cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 cursor-pointer hover:scale-[1.02] active:scale-[0.98]')
                    ]">
                 <!-- Modo Edición -->
                 <div v-if="editingIndiceId === indice.id" class="space-y-3" @click.stop>

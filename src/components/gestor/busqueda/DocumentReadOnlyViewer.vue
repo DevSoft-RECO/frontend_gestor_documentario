@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
@@ -43,9 +43,17 @@ const authStore = useAuthStore()
 
 // PDF.js State
 let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
-let currentObserver: IntersectionObserver | null = null
+let renderObserver: IntersectionObserver | null = null
+let pageTrackerObserver: IntersectionObserver | null = null
 const pagesContainer = ref<HTMLElement | null>(null)
 const scrollContainer = ref<HTMLElement | null>(null)
+
+const activeIndiceId = computed(() => {
+  if (indicesActuales.value.length === 0) return null
+  const sorted = [...indicesActuales.value].sort((a, b) => b.pagina_inicio - a.pagina_inicio)
+  const active = sorted.find(idx => currentPage.value >= idx.pagina_inicio)
+  return active ? active.id : null
+})
 
 const loadIndices = async () => {
   try {
@@ -106,9 +114,13 @@ const renderPDF = async () => {
   isRendering.value = true
   downloadProgress.value = 0
   
-  if (currentObserver) {
-    currentObserver.disconnect()
-    currentObserver = null
+  if (renderObserver) {
+    renderObserver.disconnect()
+    renderObserver = null
+  }
+  if (pageTrackerObserver) {
+    pageTrackerObserver.disconnect()
+    pageTrackerObserver = null
   }
   
   try {
@@ -181,9 +193,13 @@ const renderPDF = async () => {
 const reRenderPages = async () => {
   if (!pdfDoc || !pagesContainer.value) return
   
-  if (currentObserver) {
-    currentObserver.disconnect()
-    currentObserver = null
+  if (renderObserver) {
+    renderObserver.disconnect()
+    renderObserver = null
+  }
+  if (pageTrackerObserver) {
+    pageTrackerObserver.disconnect()
+    pageTrackerObserver = null
   }
   
   pagesContainer.value.innerHTML = ''
@@ -217,14 +233,12 @@ const reRenderPages = async () => {
 }
 
 const setupIntersectionObserver = () => {
-  currentObserver = new IntersectionObserver((entries) => {
+  renderObserver = new IntersectionObserver((entries) => {
     entries.forEach(async (entry) => {
       const pageWrapper = entry.target as HTMLElement
       const pageNum = parseInt(pageWrapper.dataset.pageNumber || '1')
       
       if (entry.isIntersecting) {
-        currentPage.value = pageNum
-        
         if (pageWrapper.dataset.rendered === 'false') {
           pageWrapper.dataset.rendered = 'rendering'
           
@@ -255,7 +269,27 @@ const setupIntersectionObserver = () => {
     rootMargin: '600px 0px'
   })
 
-  pagesContainer.value?.querySelectorAll('.pdf-page-wrapper').forEach(p => currentObserver!.observe(p))
+  pageTrackerObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const pageWrapper = entry.target as HTMLElement
+        const pageNum = parseInt(pageWrapper.dataset.pageNumber || '1')
+        currentPage.value = pageNum
+      }
+    })
+  }, {
+    root: scrollContainer.value,
+    threshold: 0,
+    rootMargin: '-50% 0px -50% 0px' // Exact center of the viewport
+  })
+
+  const pages = pagesContainer.value?.querySelectorAll('.pdf-page-wrapper')
+  if (pages) {
+    pages.forEach(p => {
+      renderObserver!.observe(p)
+      pageTrackerObserver!.observe(p)
+    })
+  }
 }
 
 const jumpToPage = (pageNum: number) => {
@@ -391,7 +425,7 @@ watch(zoomLevel, reRenderPages)
                  @click="jumpToPage(indice.pagina_inicio)"
                  :class="[
                    'p-3 rounded-xl border cursor-pointer transition-all hover:translate-x-1 active:scale-[0.98]',
-                   currentPage >= indice.pagina_inicio ? 'bg-sky-50 dark:bg-sky-900/10 border-sky-300 dark:border-sky-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700'
+                   activeIndiceId === indice.id ? 'bg-sky-50 dark:bg-sky-900/10 border-sky-300 dark:border-sky-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700'
                  ]">
               <div class="flex items-center gap-4">
                 <span class="text-[0.6rem] font-black text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/30 px-2 py-1 rounded-md min-w-[50px] text-center">Pág {{ indice.pagina_inicio }}</span>
