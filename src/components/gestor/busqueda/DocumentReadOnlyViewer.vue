@@ -36,7 +36,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const indicesActuales = ref<IndicePagina[]>([])
 const totalPaginas = ref(0)
 const currentPage = ref(1)
-const zoomLevel = ref(1.1)
+const zoomLevel = ref(1.0)
 const isRendering = ref(false)
 const downloadProgress = ref(0) // Progreso de descarga 0-100
 const authStore = useAuthStore()
@@ -140,7 +140,13 @@ const renderPDF = async () => {
     const pdfData = await downloadPDFWithProgress(url)
     
     // 3. Cargar en PDF.js desde la memoria (sin segunda descarga de red)
-    const loadingTask = pdfjsLib.getDocument({ data: pdfData })
+    const loadingTask = pdfjsLib.getDocument({
+      data: pdfData,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/standard_fonts/',
+      wasmUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/wasm/'
+    })
     pdfDoc = await loadingTask.promise
     totalPaginas.value = pdfDoc.numPages
 
@@ -151,12 +157,19 @@ const renderPDF = async () => {
     // 5. Crear placeholders con dimensiones reales
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       const page = await pdfDoc.getPage(i)
-      const viewport = page.getViewport({ scale: zoomLevel.value })
+      let viewport = page.getViewport({ scale: zoomLevel.value })
+      const MAX_CANVAS_HEIGHT = 3000
+      if (viewport.height > MAX_CANVAS_HEIGHT) {
+        const scale = (MAX_CANVAS_HEIGHT / viewport.height) * zoomLevel.value
+        viewport = page.getViewport({ scale })
+      }
       
       const pageDiv = document.createElement('div')
       pageDiv.className = 'pdf-page-wrapper'
       pageDiv.dataset.pageNumber = i.toString()
       pageDiv.dataset.rendered = 'false'
+      pageDiv.style.width = `${viewport.width}px`
+      pageDiv.style.height = `${viewport.height}px`
       
       const canvas = document.createElement('canvas')
       canvas.height = viewport.height
@@ -206,12 +219,19 @@ const reRenderPages = async () => {
   
   for (let i = 1; i <= pdfDoc.numPages; i++) {
     const page = await pdfDoc.getPage(i)
-    const viewport = page.getViewport({ scale: zoomLevel.value })
+    let viewport = page.getViewport({ scale: zoomLevel.value })
+    const MAX_CANVAS_HEIGHT = 3000
+    if (viewport.height > MAX_CANVAS_HEIGHT) {
+      const scale = (MAX_CANVAS_HEIGHT / viewport.height) * zoomLevel.value
+      viewport = page.getViewport({ scale })
+    }
     
     const pageDiv = document.createElement('div')
     pageDiv.className = 'pdf-page-wrapper'
     pageDiv.dataset.pageNumber = i.toString()
     pageDiv.dataset.rendered = 'false'
+    pageDiv.style.width = `${viewport.width}px`
+    pageDiv.style.height = `${viewport.height}px`
     
     const canvas = document.createElement('canvas')
     canvas.height = viewport.height
@@ -248,7 +268,12 @@ const setupIntersectionObserver = () => {
             
             if (canvas && pdfDoc) {
               const page = await pdfDoc.getPage(pageNum)
-              const viewport = page.getViewport({ scale: zoomLevel.value })
+              let viewport = page.getViewport({ scale: zoomLevel.value })
+              const MAX_CANVAS_HEIGHT = 3000
+              if (viewport.height > MAX_CANVAS_HEIGHT) {
+                const scale = (MAX_CANVAS_HEIGHT / viewport.height) * zoomLevel.value
+                viewport = page.getViewport({ scale })
+              }
               const context = canvas.getContext('2d')
               
               await page.render({ canvasContext: context!, viewport, canvas }).promise
@@ -455,7 +480,7 @@ watch(zoomLevel, reRenderPages)
       </aside>
 
       <!-- VISOR PDF -->
-      <main ref="scrollContainer" class="flex-1 bg-slate-200 dark:bg-slate-950 overflow-y-auto flex flex-col items-center py-12 relative scroll-smooth bg-gradient-to-br from-slate-200/50 to-slate-300/50 dark:from-slate-950 dark:to-slate-900 custom-scrollbar">
+      <main ref="scrollContainer" class="flex-1 bg-slate-200 dark:bg-slate-950 overflow-y-auto flex flex-col items-center py-4 relative scroll-smooth bg-gradient-to-br from-slate-200/50 to-slate-300/50 dark:from-slate-950 dark:to-slate-900 custom-scrollbar">
         <!-- Overlay de descarga con progreso real -->
         <div v-if="isRendering" class="absolute inset-0 z-50 bg-slate-100/80 dark:bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-slate-600 dark:text-slate-300">
           <div class="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center mb-5 border border-slate-200 dark:border-slate-700">
@@ -479,7 +504,7 @@ watch(zoomLevel, reRenderPages)
           </p>
         </div>
 
-        <div ref="pagesContainer" class="flex flex-col items-center gap-10 drop-shadow-2xl"></div>
+        <div ref="pagesContainer" class="flex flex-col items-center gap-2 drop-shadow-2xl"></div>
       </main>
     </div>
   </div>
@@ -491,13 +516,19 @@ watch(zoomLevel, reRenderPages)
 :deep(.pdf-page-wrapper) {
   position: relative;
   background: white;
-  margin-bottom: 2.5rem;
+  margin-bottom: 0.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
   border-radius: 4px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 800px;
+  display: block;
+  min-height: auto;
+  max-width: 100%;
+  height: auto !important;
+}
+
+:deep(.pdf-page-wrapper canvas) {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
 }
 
 :deep(.page-skeleton-loader) {
