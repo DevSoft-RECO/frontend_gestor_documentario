@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUploadStore } from '@/stores/upload'
+import Swal from 'sweetalert2'
 
 import PerfilHeader from '@/components/gestor/perfil/PerfilHeader.vue'
 import ExpedienteGrid from '@/components/gestor/perfil/ExpedienteGrid.vue'
@@ -145,6 +146,71 @@ const handleOpenViewer = (doc: Documento) => {
   showViewerModal.value = true
 }
 
+const handleDeleteDocument = async (doc: Documento) => {
+  const result = await Swal.fire({
+    title: '¿Eliminar carpeta del expediente?',
+    html: `¿Está seguro de que desea eliminar la carpeta <strong>"${doc.subcategoria.nombre}"</strong>?<br><br>Esta acción es irreversible y eliminará el documento físico en Google Cloud Storage y todos sus registros e índices lógicos asociados.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+    background: '#1e293b',
+    color: '#ffffff'
+  })
+
+  if (result.isConfirmed) {
+    try {
+      const token = sessionStorage.getItem('access_token')
+      const headers = { 'Authorization': `Bearer ${token}` }
+
+      Swal.fire({
+        title: 'Eliminando documento...',
+        text: 'Depurando registros y archivo físico...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading()
+        },
+        background: '#1e293b',
+        color: '#ffffff'
+      })
+
+      const res = await fetch(`${API_URL}/api/gestor/documentos/${doc.id}/eliminar-completo`, {
+        method: 'DELETE',
+        headers
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al eliminar el documento')
+      }
+
+      await Swal.fire({
+        title: '¡Eliminado!',
+        text: 'La carpeta se ha eliminado correctamente del expediente.',
+        icon: 'success',
+        confirmButtonColor: '#0ea5e9',
+        background: '#1e293b',
+        color: '#ffffff'
+      })
+
+      loadAllData()
+    } catch (error: any) {
+      console.error(error)
+      Swal.fire({
+        title: 'Error',
+        text: error.message || 'Ocurrió un error al procesar la solicitud.',
+        icon: 'error',
+        confirmButtonColor: '#0ea5e9',
+        background: '#1e293b',
+        color: '#ffffff'
+      })
+    }
+  }
+}
+
 onMounted(() => {
   loadAllData()
   uploadStore.onUploadCompleted((asociadoId) => {
@@ -178,6 +244,7 @@ onMounted(() => {
             :asociadoNombre="asociado.nombre_completo"
             @openViewer="handleOpenViewer"
             @addDocument="showUploadModal = true"
+            @deleteDocument="handleDeleteDocument"
           />
         </div>
 

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 /**
  * Estructura de datos para los documentos del expediente
@@ -32,7 +35,7 @@ const props = defineProps<{
   asociadoNombre: string
 }>()
 
-const emit = defineEmits(['openViewer', 'addDocument'])
+const emit = defineEmits(['openViewer', 'addDocument', 'deleteDocument'])
 
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('es-GT', {
@@ -170,7 +173,17 @@ const resetFilters = () => {
               <div class="doc-sheet-body">
                 <div class="sheet-header">
                   <span class="sheet-tag">Hoja Archivada</span>
-                  <div class="sheet-status-dot"></div>
+                  <div class="header-right-actions">
+                    <button 
+                      v-if="authStore.user?.roles?.includes('Super Admin')"
+                      @click.stop="emit('deleteDocument', doc)"
+                      class="btn-delete-card"
+                      title="Eliminar del expediente"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                    <div class="sheet-status-dot"></div>
+                  </div>
                 </div>
                 
                 <h4 class="sheet-title">{{ doc.subcategoria.nombre }}</h4>
@@ -554,6 +567,33 @@ const resetFilters = () => {
   border-radius: 50%;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), 0 0 8px rgba(16, 185, 129, 0.4);
   animation: pulse-status 2.5s ease-in-out infinite;
+}
+
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-delete-card {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-delete-card:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: scale(1.15);
 }
 
 @keyframes pulse-status {
