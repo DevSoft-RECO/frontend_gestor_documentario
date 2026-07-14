@@ -165,9 +165,9 @@ const uploadDocument = () => {
           <div class="form-section">
             <h3 class="section-title">1. Clasificación</h3>
             <div class="form-group">
-              <label>Categoría Principal</label>
+              <label>Portafolio</label>
               <select v-model="uploadForm.categoria_id" class="custom-select">
-                <option value="">Selecciona una familia...</option>
+                <option value="">Selecciona un portafolio...</option>
                 <option v-for="cat in filteredCategoriasMaster" :key="cat.id" :value="cat.id">
                   {{ cat.nombre }}
                 </option>
@@ -175,9 +175,9 @@ const uploadDocument = () => {
             </div>
 
             <div v-if="uploadForm.categoria_id" class="form-group slide-down">
-              <label>Tipo de Documento</label>
+              <label>Carpeta Destino</label>
               <select v-model="uploadForm.subcategoria_id" class="custom-select">
-                <option value="">Selecciona el documento exacto...</option>
+                <option value="">Seleccione la carpeta exacta...</option>
                 <option v-for="sub in activeSubcategoriasForUpload" :key="sub.id" :value="sub.id">
                   {{ sub.nombre }}
                 </option>
