@@ -765,8 +765,8 @@ const saveEdit = async (indiceId: number, event: Event) => {
                       </template>
                     </p>
                   </div>
-                  <!-- Botón Editar con Lápiz (Solo Super Admin) -->
-                  <button v-if="authStore.hasRole('Super Admin')" @click="startEdit(indice, $event)" class="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 opacity-0 group-hover:opacity-100 transition-all duration-150" title="Editar Índice">
+                  <!-- Botón Editar con Lápiz (Público) -->
+                  <button @click="startEdit(indice, $event)" class="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 opacity-0 group-hover:opacity-100 transition-all duration-150" title="Editar Índice">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                   </button>
                 </div>
