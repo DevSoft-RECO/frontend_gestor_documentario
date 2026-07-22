@@ -41,6 +41,17 @@ const isRendering = ref(false)
 const downloadProgress = ref(0) // Progreso de descarga 0-100
 const authStore = useAuthStore()
 
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return ''
+  const datePart = dateStr.split('T')[0].split(' ')[0]
+  const parts = datePart.split('-')
+  if (parts.length === 3) {
+    const [year, month, day] = parts
+    return `${day}/${month}/${year}`
+  }
+  return new Date(dateStr).toLocaleDateString()
+}
+
 // PDF.js State
 let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
 let renderObserver: IntersectionObserver | null = null
@@ -467,7 +478,7 @@ watch(zoomLevel, reRenderPages)
               
               <div v-if="indice.fecha_vencimiento" class="mt-2 pl-16 flex items-center gap-2 text-[0.6rem] text-amber-600 dark:text-amber-400 font-bold italic">
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Vence el {{ new Date(indice.fecha_vencimiento).toLocaleDateString() }}
+                Vence el {{ formatDate(indice.fecha_vencimiento) }}
               </div>
             </div>
             

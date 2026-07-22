@@ -61,6 +61,17 @@ const openDocument = (res: IndiceResultado) => {
   selectedAsociado.value = res.documento.asociado.nombre_completo
   showViewer.value = true
 }
+
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return ''
+  const datePart = dateStr.split('T')[0].split(' ')[0]
+  const parts = datePart.split('-')
+  if (parts.length === 3) {
+    const [year, month, day] = parts
+    return `${day}/${month}/${year}`
+  }
+  return new Date(dateStr).toLocaleDateString()
+}
 </script>
 
 <template>
@@ -148,7 +159,7 @@ const openDocument = (res: IndiceResultado) => {
                   <div class="info-text">
                     <label>{{ res.fecha_vencimiento ? 'Vencimiento' : 'Fecha Operación' }}</label>
                     <span :class="{ 'warning-text': res.fecha_vencimiento }">
-                      {{ new Date(res.fecha_vencimiento || res.fecha_operacion).toLocaleDateString() }}
+                      {{ formatDate(res.fecha_vencimiento || res.fecha_operacion) }}
                     </span>
                   </div>
                 </div>
