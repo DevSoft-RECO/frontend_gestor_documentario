@@ -478,7 +478,7 @@ const renderBarChart = () => {
           ticks: {
             color: isDark ? '#64748b' : '#94a3b8',
             font: { size: 11 },
-            stepSize: 1
+            precision: 0
           }
         }
       }
