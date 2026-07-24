@@ -28,6 +28,13 @@ const canEdit = computed(() => {
   return isSuperAdmin || (Number(props.asociado.usuario_id) === Number(currentUserId))
 })
 
+const canCreateFolder = computed(() => {
+  const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
+  const hasPermission = authStore.user?.permissions?.includes('crear_folders') || 
+                        authStore.user?.permisos?.includes('crear_folders')
+  return isSuperAdmin || hasPermission
+})
+
 const showEditModal = ref(false)
 const isSaving = ref(false)
 const editForm = ref({
@@ -142,7 +149,7 @@ const updateAsociado = async () => {
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </div>
           </button>
-          <button @click="emit('addDocument')" class="btn-archive-insert">
+          <button v-if="canCreateFolder" @click="emit('addDocument')" class="btn-archive-insert">
             <div class="btn-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
             </div>
