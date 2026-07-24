@@ -94,6 +94,14 @@ const routes: RouteRecordRaw[] = [
                 }
             },
             {
+                path: 'gestor/papelera',
+                name: 'gestor-papelera',
+                component: () => import('@/views/GestorDocumental/Papelera/PapeleraView.vue'),
+                meta: {
+                    title: 'Papelera de Reciclaje'
+                }
+            },
+            {
                 path: 'manuales/biblioteca',
                 name: 'manuales-biblioteca',
                 component: BibliotecaView,

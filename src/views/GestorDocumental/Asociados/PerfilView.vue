@@ -148,13 +148,13 @@ const handleOpenViewer = (doc: Documento) => {
 
 const handleDeleteDocument = async (doc: Documento) => {
   const result = await Swal.fire({
-    title: '¿Eliminar carpeta del expediente?',
-    html: `¿Está seguro de que desea eliminar la carpeta <strong>"${doc.subcategoria.nombre}"</strong>?<br><br>Esta acción es irreversible y eliminará el documento físico en Google Cloud Storage y todos sus registros e índices lógicos asociados.`,
+    title: '¿Mover carpeta a la Papelera?',
+    html: `¿Está seguro de que desea eliminar la carpeta <strong>"${doc.subcategoria.nombre}"</strong>?<br><br>Esta acción la moverá a la Papelera de Reciclaje. Un administrador podrá reasignarla o eliminarla permanentemente.`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
     cancelButtonColor: '#64748b',
-    confirmButtonText: 'Sí, eliminar',
+    confirmButtonText: 'Sí, mover a papelera',
     cancelButtonText: 'Cancelar',
     background: '#1e293b',
     color: '#ffffff'
@@ -166,8 +166,8 @@ const handleDeleteDocument = async (doc: Documento) => {
       const headers = { 'Authorization': `Bearer ${token}` }
 
       Swal.fire({
-        title: 'Eliminando documento...',
-        text: 'Depurando registros y archivo físico...',
+        title: 'Moviendo a papelera...',
+        text: 'Preparando resguardo del documento...',
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading()
@@ -176,7 +176,7 @@ const handleDeleteDocument = async (doc: Documento) => {
         color: '#ffffff'
       })
 
-      const res = await fetch(`${API_URL}/api/gestor/documentos/${doc.id}/eliminar-completo`, {
+      const res = await fetch(`${API_URL}/api/gestor/documentos/${doc.id}/eliminar-papelera`, {
         method: 'DELETE',
         headers
       })
@@ -184,12 +184,12 @@ const handleDeleteDocument = async (doc: Documento) => {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Error al eliminar el documento')
+        throw new Error(data.error || 'Error al enviar a la papelera')
       }
 
       await Swal.fire({
-        title: '¡Eliminado!',
-        text: 'La carpeta se ha eliminado correctamente del expediente.',
+        title: '¡Enviado a Papelera!',
+        text: 'La carpeta se ha trasladado correctamente a la Papelera de Reciclaje.',
         icon: 'success',
         confirmButtonColor: '#0ea5e9',
         background: '#1e293b',
