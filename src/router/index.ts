@@ -73,7 +73,7 @@ const routes: RouteRecordRaw[] = [
                 component: BuscadorView,
                 meta: {
                     title: 'Buscador de Asociados',
-                    permission: 'buscar_crear_asociados'
+                    permission: 'buscar_asociados'
                 }
             },
             {

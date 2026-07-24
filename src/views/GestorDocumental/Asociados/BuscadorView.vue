@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 interface Asociado {
   id: number
@@ -10,6 +11,15 @@ interface Asociado {
 }
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+const canCreatePortfolio = computed(() => {
+  const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
+  const hasPermission = authStore.user?.permissions?.includes('crear_portafolios') || 
+                        authStore.user?.permisos?.includes('crear_portafolios')
+  return isSuperAdmin || hasPermission
+})
+
 const searchQuery = ref('')
 const results = ref<Asociado[]>([])
 const isLoading = ref(false)
@@ -158,7 +168,7 @@ const registerAsociado = async () => {
                 <div class="empty-anim">🔍</div>
                 <h3>Sin coincidencias</h3>
                 <p>No encontramos a este asociado en nuestra base de datos.</p>
-                <button @click="openRegisterModal" class="btn-premium">
+                <button v-if="canCreatePortfolio" @click="openRegisterModal" class="btn-premium">
                   <span>+</span> Registrar Nuevo Asociado
                 </button>
               </div>
