@@ -90,7 +90,7 @@ const routes: RouteRecordRaw[] = [
                 component: DocumentoBusquedaView,
                 meta: {
                     title: 'Buscador por Número Físico',
-                    permission: 'buscar_docuemntos'
+                    permission: 'auditoria_hum'
                 }
             },
             {
