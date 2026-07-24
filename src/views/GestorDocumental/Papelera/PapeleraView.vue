@@ -31,6 +31,8 @@ interface DocumentoEliminado {
   usuario_elimino: { id: number; name: string }
   usuario_asignado?: { id: number; name: string }
   asociado?: Asociado
+  descargado: boolean
+  fecha_descarga?: string
 }
 
 const authStore = useAuthStore()
@@ -201,6 +203,13 @@ const handleDownload = async (doc: DocumentoEliminado) => {
     }
 
     window.open(data.url, '_blank')
+    
+    // Refresh to show "Descargado" status
+    if (activeTab.value === 'buzon') {
+      fetchBuzon()
+    } else {
+      fetchGeneral()
+    }
   } catch (error: any) {
     Swal.fire({
       title: 'Error de descarga',
@@ -398,16 +407,17 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
               <th>Págs</th>
               <th>Eliminado Por</th>
               <th>Fecha Eliminado</th>
+              <th>Descargado</th>
               <th>Buzón Asignado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading" class="table-loading-row">
-              <td colspan="7" class="text-center py-8 text-slate-400">Cargando elementos...</td>
+              <td colspan="8" class="text-center py-8 text-slate-400">Cargando elementos...</td>
             </tr>
             <tr v-else-if="filteredDocsGeneral.length === 0">
-              <td colspan="7" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
+              <td colspan="8" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
             </tr>
             <tr v-for="doc in filteredDocsGeneral" :key="doc.id" class="table-row hover:bg-slate-800/10 dark:hover:bg-slate-800/30">
               <td class="font-bold text-slate-700 dark:text-slate-200">{{ doc.nombre_asociado }}</td>
@@ -420,6 +430,14 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
               <td><span class="badge-pages">{{ doc.total_paginas }} págs</span></td>
               <td class="text-slate-600 dark:text-slate-300">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
               <td class="text-xs text-slate-400 font-medium">{{ formatDate(doc.fecha_eliminacion) }}</td>
+              <td>
+                <span v-if="doc.descargado" class="downloaded-badge" :title="'Descargado el: ' + formatDate(doc.fecha_descarga)">
+                  📥 Sí
+                </span>
+                <span v-else class="pending-badge">
+                  ⏳ Pendiente
+                </span>
+              </td>
               <td>
                 <span v-if="doc.usuario_asignado" class="assigned-user-badge">
                   👤 {{ doc.usuario_asignado.name }}
@@ -561,7 +579,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .papelera-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  padding: 2rem;
+  padding: 1.25rem;
   min-height: 80vh;
 }
 
@@ -569,21 +587,21 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 /* Light Mode (Default) */
 .header-title h1 {
   font-family: 'Outfit', sans-serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #1e293b;
 }
 
 .header-title p {
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   color: #64748b;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
 }
 
 /* Dark Mode Overrides */
@@ -598,17 +616,17 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .tabs-navigation {
   display: flex;
   background: rgba(226, 232, 240, 0.8);
-  padding: 0.4rem;
-  border-radius: 16px;
+  padding: 0.25rem;
+  border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.06);
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
   max-width: fit-content;
 }
 
 .tab-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  padding: 0.45rem 1rem;
+  border-radius: 9px;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #475569;
   transition: all 0.3s;
@@ -624,7 +642,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .tab-btn.active {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+  box-shadow: 0 3px 8px rgba(14, 165, 233, 0.2);
 }
 
 :global(.dark) .tabs-navigation {
@@ -643,21 +661,21 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 24px;
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.04);
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.03);
 }
 
 .panel-header-simple {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .panel-header-simple h3 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #1e293b;
 }
@@ -665,9 +683,9 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .btn-refresh {
   background: rgba(15, 23, 42, 0.04);
   color: #475569;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
-  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
   border: 1px solid rgba(15, 23, 42, 0.06);
   cursor: pointer;
@@ -682,7 +700,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 :global(.dark) .glass-card {
   background: rgba(30, 41, 59, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 :global(.dark) .panel-header-simple h3 {
   color: #f8fafc;
@@ -700,7 +718,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 /* TABLA PREMIUM */
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
@@ -712,8 +730,8 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .premium-table th {
   background: rgba(241, 245, 249, 0.8);
-  padding: 1rem 1.25rem;
-  font-size: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
   color: #475569;
@@ -722,8 +740,8 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 }
 
 .premium-table td {
-  padding: 1.1rem 1.25rem;
-  font-size: 0.875rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
   color: #334155;
   border-bottom: 1px solid rgba(15, 23, 42, 0.04);
 }
@@ -755,9 +773,9 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .badge-pages {
   background: rgba(14, 165, 233, 0.1);
   color: #0284c7;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -768,9 +786,9 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .assigned-user-badge {
   background: rgba(16, 185, 129, 0.1);
   color: #059669;
-  padding: 0.35rem 0.7rem;
-  border-radius: 10px;
-  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.68rem;
   font-weight: 700;
   border: 1px solid rgba(16, 185, 129, 0.15);
 }
@@ -784,9 +802,9 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .unassigned-badge {
   background: rgba(245, 158, 11, 0.1);
   color: #d97706;
-  padding: 0.35rem 0.7rem;
-  border-radius: 10px;
-  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.68rem;
   font-weight: 700;
   border: 1px solid rgba(245, 158, 11, 0.15);
 }
@@ -799,10 +817,10 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 /* ACCIONES */
 .btn-action {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
@@ -815,7 +833,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .btn-assign:hover {
   background: #059669;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 3px 6px rgba(16, 185, 129, 0.15);
 }
 
 .btn-download {
@@ -825,7 +843,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .btn-download:hover {
   background: #0284c7;
-  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 3px 6px rgba(14, 165, 233, 0.15);
 }
 
 .btn-delete {
@@ -835,7 +853,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .btn-delete:hover {
   background: #dc2626;
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 3px 6px rgba(239, 68, 68, 0.15);
 }
 
 /* MODAL */
@@ -857,21 +875,21 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .glass-modal {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 24px;
+  border-radius: 18px;
   width: 90%;
-  max-width: 480px;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  max-width: 440px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
   overflow: hidden;
 }
 
 :global(.dark) .glass-modal {
   background: rgba(30, 41, 59, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
   display: flex;
   justify-content: space-between;
@@ -884,7 +902,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .modal-header h3 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #1e293b;
 }
@@ -896,7 +914,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .close-btn {
   background: transparent;
   color: #64748b;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   border: none;
   cursor: pointer;
 }
@@ -910,25 +928,26 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .modal-body p {
   color: #475569;
+  font-size: 0.8rem;
 }
 
 :global(.dark) .modal-body p {
-  color: #slate-300;
+  color: #cbd5e1;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .form-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   color: #64748b;
   text-transform: uppercase;
@@ -941,11 +960,12 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .premium-select {
   background: #f8fafc;
   border: 1.5px solid rgba(15, 23, 42, 0.1);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
   color: #1e293b;
   outline: none;
   font-weight: 600;
+  font-size: 0.8rem;
 }
 
 .premium-select:focus {
@@ -959,11 +979,11 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 }
 
 .modal-footer {
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-top: 1px solid rgba(15, 23, 42, 0.06);
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 :global(.dark) .modal-footer {
@@ -973,11 +993,12 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .btn-cancel {
   background: rgba(15, 23, 42, 0.04);
   color: #475569;
-  padding: 0.6rem 1.2rem;
-  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid rgba(15, 23, 42, 0.06);
+  font-size: 0.8rem;
 }
 
 .btn-cancel:hover {
@@ -999,11 +1020,12 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .btn-confirm {
   background: #0ea5e9;
   color: #ffffff;
-  padding: 0.6rem 1.2rem;
-  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   border: none;
+  font-size: 0.8rem;
 }
 
 .btn-confirm:hover:not(:disabled) {
@@ -1019,23 +1041,23 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 .filters-panel {
   display: flex;
   align-items: flex-end;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
   background: rgba(15, 23, 42, 0.02);
-  border: 1px dashed rgba(15, 23, 42, 0.1);
-  padding: 1.25rem;
-  border-radius: 16px;
+  border: 1px dashed rgba(15, 23, 42, 0.08);
+  padding: 0.75rem;
+  border-radius: 12px;
 }
 
 :global(.dark) .filters-panel {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border: 1px dashed rgba(255, 255, 255, 0.06);
 }
 
 .filter-field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
   flex: 1;
 }
 
@@ -1044,7 +1066,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 }
 
 .filter-label {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
   color: #64748b;
@@ -1056,14 +1078,15 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 .premium-filter-input {
   background: #ffffff;
-  border: 1.5px solid rgba(15, 23, 42, 0.1);
-  border-radius: 12px;
-  padding: 0.65rem 1rem;
+  border: 1.5px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
   color: #1e293b;
   outline: none;
   font-weight: 600;
   transition: border-color 0.2s;
   width: 100%;
+  font-size: 0.75rem;
 }
 
 .premium-filter-input:focus {
@@ -1072,17 +1095,17 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 
 :global(.dark) .premium-filter-input {
   background: #1e293b;
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
   color: #f8fafc;
 }
 
 .btn-clear-filters {
   background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.65rem 1.2rem;
-  border-radius: 12px;
+  padding: 0.45rem 0.85rem;
+  border-radius: 10px;
   border: 1.5px solid rgba(239, 68, 68, 0.15);
   cursor: pointer;
   transition: all 0.2s;
@@ -1093,5 +1116,41 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
   background: #ef4444;
   color: #ffffff;
   border-color: #ef4444;
+}
+
+.downloaded-badge {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  white-space: nowrap;
+  display: inline-block;
+}
+
+:global(.dark) .downloaded-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.pending-badge {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  white-space: nowrap;
+  display: inline-block;
+}
+
+:global(.dark) .pending-badge {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.2);
 }
 </style>
