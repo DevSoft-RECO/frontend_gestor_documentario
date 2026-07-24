@@ -117,7 +117,7 @@ const expedienteAgrupado = computed<GrupoCategoria[]>(() => {
     // Si no tiene puestos asignados, se oculta
     if (!sub.puestos_autorizados || sub.puestos_autorizados.length === 0) return false
     
-    return sub.puestos_autorizados.some((p: any) => p.id === authStore.user?.id_puesto)
+    return sub.puestos_autorizados.some((pa: any) => pa.puesto_id === authStore.user?.id_puesto && (pa.ver || pa.editar))
   }
 
   expedientesBrutos.value.forEach(doc => {
@@ -211,6 +211,23 @@ const handleDeleteDocument = async (doc: Documento) => {
   }
 }
 
+const canCreateFolder = computed(() => {
+  // 1. Bypass para Super Admin / Administrador
+  if (authStore.user?.roles?.includes('Super Admin') || authStore.user?.roles?.includes('Administrador')) {
+    return true
+  }
+
+  // 2. Si hay al menos una subcategoría donde el puesto del usuario tiene "editar == true"
+  const idPuestoUsuario = authStore.user?.id_puesto
+  return categoriasMaster.value.some(cat => 
+    cat.subcategorias && cat.subcategorias.some(sub => 
+      sub.puestos_autorizados && sub.puestos_autorizados.some((pa: any) => 
+        pa.puesto_id === idPuestoUsuario && pa.editar
+      )
+    )
+  )
+})
+
 onMounted(() => {
   loadAllData()
   uploadStore.onUploadCompleted((asociadoId) => {
@@ -232,6 +249,7 @@ onMounted(() => {
     <div v-else-if="asociado">
       <PerfilHeader 
         :asociado="asociado" 
+        :can-create-folder="canCreateFolder"
         @back="router.push('/gestor/asociados')"
         @addDocument="showUploadModal = true"
         @updateSuccess="loadAllData"
@@ -242,6 +260,7 @@ onMounted(() => {
           <ExpedienteGrid 
             :expedienteAgrupado="expedienteAgrupado"
             :asociadoNombre="asociado.nombre_completo"
+            :can-create-folder="canCreateFolder"
             @openViewer="handleOpenViewer"
             @addDocument="showUploadModal = true"
             @deleteDocument="handleDeleteDocument"

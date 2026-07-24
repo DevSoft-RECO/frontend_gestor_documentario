@@ -16,6 +16,7 @@ interface Asociado {
 
 const props = defineProps<{
   asociado: Asociado
+  canCreateFolder: boolean
 }>()
 
 const emit = defineEmits(['back', 'addDocument', 'updateSuccess'])
@@ -26,13 +27,6 @@ const canEdit = computed(() => {
   const currentUserId = authStore.user?.id || authStore.user?.user_id
   const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
   return isSuperAdmin || (Number(props.asociado.usuario_id) === Number(currentUserId))
-})
-
-const canCreateFolder = computed(() => {
-  const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
-  const hasPermission = authStore.user?.permissions?.includes('crear_folders') || 
-                        authStore.user?.permisos?.includes('crear_folders')
-  return isSuperAdmin || hasPermission
 })
 
 const showEditModal = ref(false)

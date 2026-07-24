@@ -33,6 +33,7 @@ interface GrupoCategoria {
 const props = defineProps<{
   expedienteAgrupado: GrupoCategoria[]
   asociadoNombre: string
+  canCreateFolder: boolean
 }>()
 
 const emit = defineEmits(['openViewer', 'addDocument', 'deleteDocument'])
@@ -129,7 +130,7 @@ const resetFilters = () => {
       </div>
       <h3>Archivador Vacío</h3>
       <p>No se han encontrado fólderes ni documentos archivados en la gaveta de <strong>{{ props.asociadoNombre }}.</strong></p>
-      <button @click="emit('addDocument')" class="btn-primary-outline mt-6">Abrir Nuevo Fólder</button>
+      <button v-if="canCreateFolder" @click="emit('addDocument')" class="btn-primary-outline mt-6">Abrir Nuevo Fólder</button>
     </div>
 
     <!-- Estado Sin Resultados por Filtros -->

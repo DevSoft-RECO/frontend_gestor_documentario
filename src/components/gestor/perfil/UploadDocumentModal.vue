@@ -10,9 +10,11 @@ interface CategoriaMaster {
   subcategorias: SubcategoriaMaster[]
 }
 
-interface Puesto {
-  id: number
-  nombre: string
+interface SubcategoriaPuesto {
+  subcategoria_id: number
+  puesto_id: number
+  ver: boolean
+  editar: boolean
 }
 
 interface SubcategoriaMaster {
@@ -20,7 +22,7 @@ interface SubcategoriaMaster {
   categoria_id: number
   nombre: string
   estado: boolean
-  puestos_autorizados?: Puesto[]
+  puestos_autorizados?: SubcategoriaPuesto[]
 }
 
 const props = defineProps<{
@@ -59,9 +61,9 @@ const canSeeSubcategoria = (sub: SubcategoriaMaster) => {
     return false
   }
 
-  // 3. Verificar si el puesto del usuario está autorizado
+  // 3. Verificar si el puesto del usuario tiene permiso de EDITAR autorizado
   const idPuestoUsuario = authStore.user?.id_puesto
-  return sub.puestos_autorizados.some(p => p.id === idPuestoUsuario)
+  return sub.puestos_autorizados.some(pa => pa.puesto_id === idPuestoUsuario && pa.editar)
 }
 
 const filteredCategoriasMaster = computed(() => {

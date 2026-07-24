@@ -6,12 +6,20 @@ interface Puesto {
   nombre: string
 }
 
+interface SubcategoriaPuesto {
+  subcategoria_id: number
+  puesto_id: number
+  ver: boolean
+  editar: boolean
+  puesto?: Puesto
+}
+
 interface Subcategoria {
   id: number
   categoria_id: number
   nombre: string
   estado: boolean
-  puestos_autorizados?: Puesto[]
+  puestos_autorizados?: SubcategoriaPuesto[]
 }
 
 interface Categoria {
@@ -36,9 +44,10 @@ const editingSubcategoria = ref<Subcategoria | null>(null)
 const formCategoria = ref({ nombre: '', estado: true })
 const formSubcategoria = ref({ 
   nombre: '', 
-  estado: true,
-  puestos_ids: [] as number[] 
+  estado: true
 })
+
+const puestosPermissions = ref<Record<number, { ver: boolean, editar: boolean }>>({})
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -129,8 +138,14 @@ const saveSubcategoria = async () => {
     ? `${API_URL}/api/gestor/subcategorias/${editingSubcategoria.value.id}` 
     : `${API_URL}/api/gestor/subcategorias`
 
-  // Mapeamos los IDs seleccionados a objetos Puesto para GORM
-  const puestosSeleccionados = formSubcategoria.value.puestos_ids.map(id => ({ id }))
+  // Mapeamos los permisos de puestos activos
+  const puestosSeleccionados = Object.entries(puestosPermissions.value)
+    .filter(([_, perm]) => perm.ver || perm.editar)
+    .map(([puestoId, perm]) => ({
+      puesto_id: Number(puestoId),
+      ver: perm.ver,
+      editar: perm.editar
+    }))
 
   const body = {
     nombre: formSubcategoria.value.nombre,
@@ -204,38 +219,52 @@ const filteredPuestos = computed(() => {
   return puestos.value.filter(p => p.nombre.toLowerCase().includes(query))
 })
 
+const toggleEditar = (puestoId: number) => {
+  const perm = puestosPermissions.value[puestoId]
+  if (perm && perm.editar) {
+    perm.ver = true
+  }
+}
+
 const selectAllPuestos = () => {
-  const currentFiltered = filteredPuestos.value
-  const currentIds = [...formSubcategoria.value.puestos_ids]
-  currentFiltered.forEach(p => {
-    if (!currentIds.includes(p.id)) {
-      currentIds.push(p.id)
-    }
+  filteredPuestos.value.forEach(p => {
+    puestosPermissions.value[p.id] = { ver: true, editar: true }
   })
-  formSubcategoria.value.puestos_ids = currentIds
 }
 
 const deselectAllPuestos = () => {
-  const currentFiltered = filteredPuestos.value
-  formSubcategoria.value.puestos_ids = formSubcategoria.value.puestos_ids.filter(
-    id => !currentFiltered.some(p => p.id === id)
-  )
+  filteredPuestos.value.forEach(p => {
+    puestosPermissions.value[p.id] = { ver: false, editar: false }
+  })
 }
 
 const openModalSubcategoria = (sub: Subcategoria | null = null) => {
   searchPuestoQuery.value = ''
   editingSubcategoria.value = sub
+
+  // Inicializar todos los puestos en falso
+  puestos.value.forEach(p => {
+    puestosPermissions.value[p.id] = { ver: false, editar: false }
+  })
+
   if (sub) {
     formSubcategoria.value = { 
       nombre: sub.nombre, 
-      estado: sub.estado,
-      puestos_ids: sub.puestos_autorizados?.map(p => p.id) || []
+      estado: sub.estado
+    }
+    // Cargar permisos existentes
+    if (sub.puestos_autorizados) {
+      sub.puestos_autorizados.forEach(pa => {
+        puestosPermissions.value[pa.puesto_id] = {
+          ver: pa.ver,
+          editar: pa.editar
+        }
+      })
     }
   } else {
     formSubcategoria.value = { 
       nombre: '', 
-      estado: true,
-      puestos_ids: []
+      estado: true
     }
   }
   showModalSubcategoria.value = true
@@ -379,18 +408,33 @@ onMounted(() => {
             </div>
           </div>
 
+          <div class="puestos-selector-header">
+            <span class="puesto-col-name">Puesto</span>
+            <span class="puesto-col-perm">👁️ Ver</span>
+            <span class="puesto-col-perm">✏️ Editar</span>
+          </div>
+
           <div class="puestos-selector">
-            <div v-for="puesto in filteredPuestos" :key="puesto.id" class="puesto-option">
-              <input 
-                type="checkbox" 
-                :id="'puesto-' + puesto.id" 
-                :value="puesto.id" 
-                v-model="formSubcategoria.puestos_ids"
-              >
-              <label :for="'puesto-' + puesto.id">{{ puesto.nombre }}</label>
+            <div v-for="puesto in filteredPuestos" :key="puesto.id" class="puesto-option-row">
+              <span class="puesto-label">{{ puesto.nombre }}</span>
+              <span class="puesto-checkbox">
+                <input 
+                  type="checkbox" 
+                  :id="'puesto-ver-' + puesto.id" 
+                  v-model="puestosPermissions[puesto.id].ver"
+                >
+              </span>
+              <span class="puesto-checkbox">
+                <input 
+                  type="checkbox" 
+                  :id="'puesto-editar-' + puesto.id" 
+                  v-model="puestosPermissions[puesto.id].editar"
+                  @change="toggleEditar(puesto.id)"
+                >
+              </span>
             </div>
           </div>
-          <p class="helper-text">Si no seleccionas ninguno, todos tendrán acceso (por defecto).</p>
+          <p class="helper-text">Si no autorizas ningún permiso (ambos vacíos), el puesto no tendrá acceso a este folder.</p>
         </div>
         <div class="modal-actions">
           <button @click="showModalSubcategoria = false" class="btn-cancel">Cancelar</button>
@@ -593,16 +637,55 @@ onMounted(() => {
   border-radius: 8px;
   padding: 0.5rem;
 }
-.puesto-option {
-  display: flex;
+.puestos-selector-header {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 1fr;
   align-items: center;
-  gap: 0.75rem;
+  padding: 0.5rem;
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #475569;
+  border-bottom: 1.5px solid #cbd5e1;
+}
+
+.puesto-col-name {
+  text-align: left;
+}
+
+.puesto-col-perm {
+  text-align: center;
+}
+
+.puesto-option-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 1fr;
+  align-items: center;
   padding: 0.5rem;
   border-bottom: 1px solid #f1f5f9;
 }
-.puesto-option:last-child { border-bottom: none; }
-.puesto-option label { margin-bottom: 0; font-size: 0.9rem; cursor: pointer; color: #1e293b; }
-.puesto-option input { width: auto; cursor: pointer; }
+
+.puesto-option-row:last-child {
+  border-bottom: none;
+}
+
+.puesto-label {
+  font-size: 0.85rem;
+  color: #1e293b;
+  text-align: left;
+}
+
+.puesto-checkbox {
+  display: flex;
+  justify-content: center;
+}
+
+.puesto-checkbox input {
+  width: auto;
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+}
 
 .helper-text { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
 
