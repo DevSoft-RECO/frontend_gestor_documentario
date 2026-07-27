@@ -25,6 +25,14 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 {{ fechaActual }}
               </span>
+              <span v-if="gcsSize !== null" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-cyan-300 border border-white/10">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                Google Cloud: {{ formatBytes(gcsSize) }}
+              </span>
+              <span v-else class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-cyan-300/60 border border-white/10">
+                <svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                Calculando espacio...
+              </span>
             </p>
           </div>
         </div>
@@ -295,9 +303,11 @@ interface Stats {
   manuales_creados_mes: number
   manuales_por_categoria: { nombre: string; total: number }[]
   manuales_recientes: { titulo: string; fecha_creacion: string; usuario_nombre: string; subcategoria: string }[]
+  gcs_size_bytes: number
 }
 
 const stats = ref<Stats | null>(null)
+const gcsSize = ref<number | null>(null)
 const loading = ref(false)
 const barChartCanvas = ref<HTMLCanvasElement | null>(null)
 const donutChartCanvas = ref<HTMLCanvasElement | null>(null)
@@ -434,8 +444,24 @@ const manualKpis = computed(() => {
   ]
 })
 
+const fetchGCSSize = async () => {
+  try {
+    const token = sessionStorage.getItem('access_token')
+    const res = await fetch(`${API_URL}/api/gestor/dashboard/gcs-size`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      gcsSize.value = data.gcs_size_bytes
+    }
+  } catch (e) {
+    console.error('Error fetching GCS size:', e)
+  }
+}
+
 const fetchStats = async () => {
   loading.value = true
+  gcsSize.value = null
   try {
     const token = sessionStorage.getItem('access_token')
     const res = await fetch(`${API_URL}/api/gestor/dashboard/stats`, {
@@ -445,6 +471,7 @@ const fetchStats = async () => {
       stats.value = await res.json()
       await nextTick()
       renderCharts()
+      fetchGCSSize() // Se ejecuta en segundo plano
     }
   } catch (e) {
     console.error('Error fetching dashboard stats:', e)
@@ -594,6 +621,15 @@ const renderDonutChart = () => {
 
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('es-GT', { day: '2-digit', month: 'short' })
+}
+
+const formatBytes = (bytes: number, decimals = 2) => {
+  if (!bytes) return '0 Bytes'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
 const getDaysUntil = (dateStr: string) => {
