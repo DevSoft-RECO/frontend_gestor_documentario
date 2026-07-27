@@ -467,7 +467,7 @@ const renderBarChart = () => {
   const totalAsoc = stats.value.total_asociados || 0
 
   // Proyectar crecimiento de asociados hacia atrás para los 6 meses
-  const asociadosData = data.map((d, index) => {
+  const asociadosData = data.map((_, index) => {
     const scaleFactors = [0.65, 0.72, 0.80, 0.87, 0.93, 1.0]
     const factor = scaleFactors[index % scaleFactors.length]
     return Math.max(1, Math.round(totalAsoc * factor))
