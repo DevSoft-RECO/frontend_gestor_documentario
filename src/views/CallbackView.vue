@@ -71,9 +71,7 @@ onMounted(async () => {
 </script>
 <template>
   <div
-    class="min-h-screen flex items-center justify-center px-4
-           bg-gradient-to-br from-[#0B3C5D]/10 to-[#1FAF8B]/10
-           dark:from-gray-900 dark:to-gray-950"
+    class="min-h-screen flex items-center justify-center px-4 transition-all duration-500"
   >
     <div
       class="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900
@@ -94,17 +92,60 @@ onMounted(async () => {
         </p>
       </div>
 
-      <!-- Loader -->
-      <div class="flex justify-center py-2">
-        <div class="relative h-10 w-10">
-          <div
-            class="absolute inset-0 rounded-full border-2
-                   border-gray-300 dark:border-gray-700"
-          ></div>
-          <div
-            class="absolute inset-0 rounded-full border-2
-                   border-t-[#1FAF8B] animate-spin"
-          ></div>
+      <!-- Loader (Holographic Document Scanner) -->
+      <div class="flex justify-center py-4">
+        <div class="doc-scanner-wrapper">
+          <svg class="doc-svg" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Document Body -->
+            <rect class="doc-paper" x="15" y="15" width="70" height="90" rx="6" />
+            
+            <!-- Folded Corner -->
+            <path d="M65 15 L85 35 L65 35 Z" fill="url(#foldGrad)" />
+            <path d="M65 35 L85 35 L65 15 Z" stroke="url(#docBorderGrad)" stroke-width="1.5" fill="none" />
+            
+            <!-- Mock text lines (inside the document) -->
+            <rect class="doc-line" x="27" y="42" width="46" height="4" rx="2" fill="url(#lineGrad)" />
+            <rect class="doc-line delayed-1" x="27" y="54" width="36" height="4" rx="2" fill="url(#lineGrad)" />
+            <rect class="doc-line delayed-2" x="27" y="66" width="42" height="4" rx="2" fill="url(#lineGrad)" />
+            <rect class="doc-line delayed-3" x="27" y="78" width="28" height="4" rx="2" fill="url(#lineGrad)" />
+            
+            <!-- Holographic scanner laser line -->
+            <g class="scan-laser">
+              <line x1="10" y1="25" x2="90" y2="25" stroke="url(#laserGrad)" stroke-width="2.5" />
+              <!-- Soft glow under the laser -->
+              <rect x="10" y="24" width="80" height="2" fill="url(#laserGlowGrad)" opacity="0.5" />
+            </g>
+            
+            <!-- Definitions of Gradients -->
+            <defs>
+              <linearGradient id="docBorderGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="var(--grad-start)" />
+                <stop offset="100%" stop-color="var(--grad-end)" />
+              </linearGradient>
+              <linearGradient id="foldGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="var(--grad-start)" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="var(--grad-end)" stop-opacity="0.2" />
+              </linearGradient>
+              <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="var(--grad-start)" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="var(--grad-end)" stop-opacity="0.3" />
+              </linearGradient>
+              <linearGradient id="laserGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="transparent" />
+                <stop offset="15%" stop-color="var(--laser-color)" />
+                <stop offset="50%" stop-color="var(--laser-color)" />
+                <stop offset="85%" stop-color="var(--laser-color)" />
+                <stop offset="100%" stop-color="transparent" />
+              </linearGradient>
+              <linearGradient id="laserGlowGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--laser-color)" />
+                <stop offset="100%" stop-color="transparent" />
+              </linearGradient>
+            </defs>
+          </svg>
+          
+          <!-- Dashed Outer Data Ring -->
+          <div class="glow-ring"></div>
         </div>
       </div>
 
@@ -133,4 +174,112 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.min-h-screen {
+  background: var(--bg-gradient);
+  --grad-start: #0284c7;
+  --grad-end: #10b981;
+  --laser-color: #10b981;
+  --paper-fill: rgba(219, 234, 254, 0.7);
+  --ring-border: rgba(2, 132, 199, 0.2);
+  --ring-dot: #0284c7;
+  --svg-glow: rgba(2, 132, 199, 0.25);
+  transition: background-color 0.3s ease;
+}
+
+:global(.dark) .min-h-screen {
+  --grad-start: #00f2fe;
+  --grad-end: #00ff87;
+  --laser-color: #39ff14;
+  --paper-fill: rgba(10, 25, 47, 0.55);
+  --ring-border: rgba(0, 242, 254, 0.2);
+  --ring-dot: #39ff14;
+  --svg-glow: rgba(0, 242, 254, 0.4);
+}
+
+.doc-scanner-wrapper {
+  position: relative;
+  width: 90px;
+  height: 105px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.doc-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px var(--svg-glow));
+}
+
+.doc-paper {
+  fill: var(--paper-fill);
+  stroke: url(#docBorderGrad);
+  stroke-width: 2;
+  transition: fill 0.3s ease;
+}
+
+.doc-line {
+  animation: pulse-line 2.5s infinite ease-in-out;
+  transform-origin: left;
+}
+.doc-line.delayed-1 { animation-delay: 0.4s; }
+.doc-line.delayed-2 { animation-delay: 0.8s; }
+.doc-line.delayed-3 { animation-delay: 1.2s; }
+
+@keyframes pulse-line {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.scan-laser {
+  animation: scan-translation 3s ease-in-out infinite;
+}
+
+@keyframes scan-translation {
+  0%, 100% {
+    transform: translateY(0px);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(75px);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px var(--laser-color));
+  }
+}
+
+.glow-ring {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2px dashed var(--ring-border);
+  animation: rotate-ring 15s linear infinite;
+  pointer-events: none;
+}
+
+.glow-ring::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: var(--ring-dot);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--ring-dot);
+}
+
+@keyframes rotate-ring {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
 
