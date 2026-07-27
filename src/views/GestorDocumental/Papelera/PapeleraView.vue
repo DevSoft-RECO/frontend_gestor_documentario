@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import Swal from 'sweetalert2'
+import AsignarBuzonModal from '@/components/gestor/papelera/AsignarBuzonModal.vue'
 
 interface Usuario {
   id: number
@@ -51,7 +52,6 @@ const isLoading = ref(false)
 
 const showAssignModal = ref(false)
 const selectedDoc = ref<DocumentoEliminado | null>(null)
-const selectedUserId = ref<number | ''>('')
 
 const searchAsociadoQuery = ref('')
 const filterDateQuery = ref('')
@@ -224,12 +224,11 @@ const handleDownload = async (doc: DocumentoEliminado) => {
 
 const openAssign = (doc: DocumentoEliminado) => {
   selectedDoc.value = doc
-  selectedUserId.value = doc.usuario_asignado_id || ''
   showAssignModal.value = true
 }
 
-const handleAssign = async () => {
-  if (!selectedDoc.value || selectedUserId.value === '') return
+const handleAssign = async (userId: number) => {
+  if (!selectedDoc.value) return
   try {
     Swal.fire({
       title: 'Asignando...',
@@ -246,7 +245,7 @@ const handleAssign = async () => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ usuario_asignado_id: selectedUserId.value })
+      body: JSON.stringify({ usuario_asignado_id: userId })
     })
 
     Swal.close()
@@ -540,35 +539,13 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
     </div>
 
     <!-- MODAL DE ASIGNACIÓN -->
-    <div v-if="showAssignModal" class="fixed inset-0 bg-slate-900/40 dark:bg-slate-955/75 backdrop-blur-md flex items-center justify-center z-50">
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-[90%] max-w-[440px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
-        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-          <h3 class="font-['Outfit'] text-base font-bold text-slate-800 dark:text-slate-100">Asignar Documento a Buzón</h3>
-          <button @click="showAssignModal = false" class="bg-transparent text-slate-400 hover:text-slate-900 dark:hover:text-white text-xl border-0 cursor-pointer">&times;</button>
-        </div>
-        <div class="p-5" v-if="selectedDoc">
-          <p class="text-xs text-slate-600 dark:text-slate-300 mb-4">
-            Elige qué usuario será responsable de descargar el archivo:
-            <strong>{{ selectedDoc.nombre_subcategoria }}</strong> del asociado <strong>{{ selectedDoc.nombre_asociado }}</strong>.
-          </p>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-[0.7rem] font-extrabold text-slate-450 uppercase">Destinatario</label>
-            <select v-model="selectedUserId" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 text-xs font-semibold outline-none focus:border-sky-500">
-              <option value="" disabled selected>Seleccione un usuario...</option>
-              <option v-for="user in usuarios" :key="user.id" :value="user.id">
-                {{ user.name }}
-              </option>
-            </select>
-          </div>
-        </div>
-        <div class="p-5 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
-          <button @click="showAssignModal = false" class="bg-slate-900/5 hover:bg-slate-900/10 text-slate-650 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-300 border border-slate-900/5 dark:border-white/10 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition duration-200">Cancelar</button>
-          <button @click="handleAssign" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition duration-200 border-0 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="selectedUserId === ''">
-            Confirmar Asignación
-          </button>
-        </div>
-      </div>
-    </div>
+    <AsignarBuzonModal 
+      v-if="showAssignModal"
+      :show="showAssignModal"
+      :documento="selectedDoc"
+      :usuarios="usuarios"
+      @close="showAssignModal = false"
+      @assign="handleAssign"
+    />
   </div>
 </template>
