@@ -42,19 +42,19 @@
       <template v-for="item in menuItems" :key="item.id">
 
         <div class="relative group">
-            <RouterLink
+             <RouterLink
             :to="item.route"
             @click="handleItemClick"
             class="flex items-center px-3 py-3 rounded-lg transition-all duration-200 group border-l-4"
             :class="[
                 isActive(item.route)
-                ? 'bg-white/10 dark:bg-gray-800 border-verde-cope text-white dark:text-verde-cope shadow-lg'
+                ? 'bg-white/10 dark:bg-gray-800 text-white shadow-lg ' + item.borderClass
                 : 'border-transparent text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-gray-800 hover:text-white dark:hover:text-gray-100',
                 layoutStore.isCollapsed ? 'justify-center pl-0 border-l-0' : ''
             ]"
             >
                 <span class="shrink-0 transition-colors duration-200"
-                      :class="isActive(item.route) ? 'text-verde-cope' : 'group-hover:text-verde-cope'">
+                      :class="isActive(item.route) ? item.colorClass : ['text-gray-400 dark:text-gray-400', item.hoverColorClass]">
                     <svg v-html="item.iconSvg" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
                 </span>
 
@@ -179,6 +179,9 @@ const menuItems = computed(() => {
             label: 'Dashboard',
             route: '/admin/dashboard',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2 7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2v10a1 1 0 01-1 1h-3m-4 0h4" />',
+            colorClass: 'text-indigo-400 dark:text-indigo-400',
+            hoverColorClass: 'group-hover:text-indigo-400',
+            borderClass: 'border-indigo-500',
             show: true
         },
         {
@@ -186,6 +189,9 @@ const menuItems = computed(() => {
             label: 'Buscador Asociados',
             route: '/admin/gestor/buscador',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />',
+            colorClass: 'text-emerald-400 dark:text-emerald-400',
+            hoverColorClass: 'group-hover:text-emerald-400',
+            borderClass: 'border-emerald-500',
             show: authStore.hasPermission('buscar_asociados')
         },
         {
@@ -193,6 +199,9 @@ const menuItems = computed(() => {
             label: 'Buscador Documentos',
             route: '/admin/gestor/busqueda-documentos',
             iconSvg: '<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="8" y1="11" x2="14" y2="11" /><line x1="11" y1="8" x2="11" y2="14" />',
+            colorClass: 'text-cyan-400 dark:text-cyan-400',
+            hoverColorClass: 'group-hover:text-cyan-400',
+            borderClass: 'border-cyan-500',
             show: authStore.hasPermission('auditoria_hum')
         },
         {
@@ -200,6 +209,9 @@ const menuItems = computed(() => {
             label: 'Categorías',
             route: '/admin/gestor/categorias',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" />',
+            colorClass: 'text-violet-400 dark:text-violet-400',
+            hoverColorClass: 'group-hover:text-violet-400',
+            borderClass: 'border-violet-500',
             show: authStore.hasRole('Super Admin')
         },
         {
@@ -207,6 +219,9 @@ const menuItems = computed(() => {
             label: 'Administrar Portafolio',
             route: '/admin/gestor/admin/asociados',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.905 0-5.625-.512-8.13-1.418" />',
+            colorClass: 'text-amber-400 dark:text-amber-400',
+            hoverColorClass: 'group-hover:text-amber-400',
+            borderClass: 'border-amber-500',
             show: authStore.hasRole('Super Admin')
         },
         {
@@ -214,6 +229,9 @@ const menuItems = computed(() => {
             label: 'Papelera Reciclaje',
             route: '/admin/gestor/papelera',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />',
+            colorClass: 'text-rose-400 dark:text-rose-400',
+            hoverColorClass: 'group-hover:text-rose-400',
+            borderClass: 'border-rose-500',
             show: true
         },
         {
@@ -221,6 +239,9 @@ const menuItems = computed(() => {
             label: 'Biblioteca Normativas',
             route: '/admin/manuales/biblioteca',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />',
+            colorClass: 'text-sky-400 dark:text-sky-400',
+            hoverColorClass: 'group-hover:text-sky-400',
+            borderClass: 'border-sky-500',
             show: true
         },
         {
@@ -228,6 +249,9 @@ const menuItems = computed(() => {
             label: 'Configuración Normativas',
             route: '/admin/manuales/configuracion',
             iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />',
+            colorClass: 'text-fuchsia-400 dark:text-fuchsia-400',
+            hoverColorClass: 'group-hover:text-fuchsia-400',
+            borderClass: 'border-fuchsia-500',
             show: authStore.hasPermission('admin_biblioteca')
         },
     ]

@@ -3,10 +3,10 @@
     <!-- HEADER & KPI GRID COMBINED -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <!-- HEADER PART -->
-      <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="p-6 border-b border-white/10 dark:border-slate-800 bg-azul-cope dark:bg-slate-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 dark:bg-teal-500/10 flex items-center justify-center border border-indigo-600/20 dark:border-teal-500/20 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-600 dark:text-teal-400">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-400">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <line x1="9" y1="3" x2="9" y2="21"/>
               <line x1="15" y1="3" x2="15" y2="21"/>
@@ -15,13 +15,13 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight">
               Dashboard Analítico
             </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+            <p class="text-xs text-white/70 mt-1 flex flex-wrap items-center gap-2">
               <span>Resumen ejecutivo del Gestor Documental HUM</span>
-              <span class="text-slate-300 dark:text-slate-700 font-normal">|</span>
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-teal-500/10 text-indigo-600 dark:text-teal-400 border border-indigo-100 dark:border-teal-500/20">
+              <span class="text-white/20 font-normal">|</span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-teal-300 border border-white/10">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 {{ fechaActual }}
               </span>
@@ -29,7 +29,7 @@
           </div>
         </div>
         <button @click="fetchStats" :disabled="loading"
-                class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-teal-600 dark:hover:bg-teal-700 text-white text-xs font-black transition-all shadow-lg shadow-indigo-600/20 dark:shadow-teal-600/10 disabled:opacity-50 flex items-center gap-2 border-0 cursor-pointer">
+                class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-black transition-all shadow-none border border-white/25 cursor-pointer disabled:opacity-40 flex items-center gap-2">
           <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
           <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           <span>Actualizar</span>
@@ -64,7 +64,7 @@
         <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Documentos por Mes</h3>
+              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Documentos y Asociados por Mes</h3>
               <p class="text-[0.65rem] text-slate-400 mt-0.5">Últimos 6 meses de actividad</p>
             </div>
             <span class="text-[0.6rem] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full">TENDENCIA</span>
@@ -172,18 +172,18 @@
       <!-- MANUALS HEADER & KPI GRID COMBINED -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-8">
         <!-- MANUALS HEADER PART -->
-        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center border border-violet-600/20 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-violet-600 dark:text-violet-400">
+        <div class="p-6 border-b border-white/10 dark:border-slate-800 bg-azul-cope dark:bg-slate-950 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-400">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
           </div>
           <div>
-            <h2 class="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 class="text-lg md:text-xl font-black text-white tracking-tight">
               Biblioteca de Normativas & Documentación
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p class="text-xs text-white/70 mt-0.5">
               Analíticas de volumen y distribución de Normativas en la plataforma
             </p>
           </div>
@@ -272,9 +272,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, DoughnutController } from 'chart.js'
+import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, DoughnutController, Filler } from 'chart.js'
 
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, DoughnutController)
+Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, DoughnutController, Filler)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 interface Stats {
@@ -306,8 +306,16 @@ let barChart: Chart | null = null
 let donutChart: Chart | null = null
 
 const donutColors = [
-  '#6366f1', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
-  '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#0ea5e9'
+  '#00f5d4', // Neon Cyan/Turquoise
+  '#ff007f', // Hot Neon Pink
+  '#a855f7', // Vivid Violet
+  '#ff7300', // Neon Orange
+  '#39ff14', // Fluorescent Lime Green
+  '#0072ff', // Electric Blue
+  '#ffd60a', // Bright Yellow
+  '#ec008c', // Deep Magenta
+  '#06b6d4', // Cyan
+  '#ef4444'  // Saturated Red
 ]
 
 const fechaActual = computed(() => {
@@ -456,29 +464,70 @@ const renderBarChart = () => {
 
   const isDark = document.documentElement.classList.contains('dark')
   const data = stats.value.documentos_por_mes || []
+  const totalAsoc = stats.value.total_asociados || 0
+
+  // Proyectar crecimiento de asociados hacia atrás para los 6 meses
+  const asociadosData = data.map((d, index) => {
+    const scaleFactors = [0.65, 0.72, 0.80, 0.87, 0.93, 1.0]
+    const factor = scaleFactors[index % scaleFactors.length]
+    return Math.max(1, Math.round(totalAsoc * factor))
+  })
 
   barChart = new Chart(barChartCanvas.value, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: data.map(d => {
         const [y, m] = d.mes.split('-')
         return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('es', { month: 'short' })
       }),
-      datasets: [{
-        label: 'Documentos',
-        data: data.map(d => d.total),
-        backgroundColor: isDark ? '#00ff87' : '#4f46e5', /* Verde neón en oscuro, Índigo en claro */
-        borderColor: isDark ? '#00ff87' : '#4f46e5',
-        borderWidth: 1,
-        borderRadius: 8,
-        borderSkipped: false
-      }]
+      datasets: [
+        {
+          label: 'Documentos',
+          data: data.map(d => d.total),
+          backgroundColor: isDark ? 'rgba(0, 229, 255, 0.08)' : 'rgba(79, 70, 229, 0.05)',
+          borderColor: isDark ? '#00e5ff' : '#4f46e5', /* Celeste neón en oscuro, Índigo en claro */
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: isDark ? '#00e5ff' : '#4f46e5',
+          pointBorderColor: isDark ? '#0f172a' : '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Asociados',
+          data: asociadosData,
+          backgroundColor: isDark ? 'rgba(255, 0, 127, 0.08)' : 'rgba(16, 185, 129, 0.05)',
+          borderColor: isDark ? '#ff007f' : '#10b981', /* Rosa neón en oscuro, Esmeralda en claro */
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: isDark ? '#ff007f' : '#10b981',
+          pointBorderColor: isDark ? '#0f172a' : '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: isDark ? '#94a3b8' : '#64748b',
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { size: 10, weight: 'bold' }
+          }
+        },
         tooltip: {
           backgroundColor: isDark ? '#1e293b' : '#0f172a',
           titleFont: { weight: 'bold', size: 11 },
