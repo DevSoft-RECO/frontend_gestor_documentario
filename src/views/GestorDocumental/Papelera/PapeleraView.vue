@@ -339,120 +339,120 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
 </script>
 
 <template>
-  <div class="papelera-container">
-    <div class="header-section">
+  <div class="p-5 min-h-[80vh] font-['Plus_Jakarta_Sans'] transition-colors duration-300">
+    <div class="flex justify-between items-center mb-6">
       <div class="header-title">
-        <h1>🗑️ Papelera de Reciclaje</h1>
-        <p>Buzón de resguardo y descarga de documentos archivados por eliminación errónea.</p>
+        <h1 class="font-['Outfit'] text-2xl font-extrabold text-slate-800 dark:text-slate-100">🗑️ Papelera de Reciclaje</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Buzón de resguardo y descarga de documentos archivados por eliminación errónea.</p>
       </div>
     </div>
 
     <!-- TABS NAVEGACIÓN -->
-    <div v-if="isAdmins" class="tabs-navigation shadow-sm">
+    <div v-if="isAdmins" class="flex bg-slate-200/80 dark:bg-slate-800/40 p-1 rounded-xl border border-slate-900/5 dark:border-white/5 mb-5 max-w-fit shadow-sm">
       <button 
         @click="handleTabChange('general')" 
-        :class="['tab-btn', { active: activeTab === 'general' }]"
+        :class="['px-4 py-2 rounded-lg text-xs font-bold transition duration-300 cursor-pointer bg-transparent border-0', activeTab === 'general' ? 'bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-md shadow-sky-500/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200']"
       >
         📥 Buzón General (Administradores)
       </button>
       <button 
         @click="handleTabChange('buzon')" 
-        :class="['tab-btn', { active: activeTab === 'buzon' }]"
+        :class="['px-4 py-2 rounded-lg text-xs font-bold transition duration-300 cursor-pointer bg-transparent border-0', activeTab === 'buzon' ? 'bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-md shadow-sky-500/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200']"
       >
         👤 Mi Buzón Personal
       </button>
     </div>
 
     <!-- TAB PANEL: BUZON GENERAL (ADMINS) -->
-    <div v-if="activeTab === 'general' && isAdmins" class="glass-card panel-papelera">
-      <div class="panel-header-simple">
-        <h3>Listado General de Expedientes Eliminados</h3>
-        <button @click="fetchGeneral" class="btn-refresh">🔄 Actualizar</button>
+    <div v-if="activeTab === 'general' && isAdmins" class="bg-white/70 backdrop-blur-lg border border-slate-900/5 dark:border-white/5 rounded-2xl p-5 shadow-lg shadow-slate-900/2 dark:bg-slate-900/45 dark:shadow-black/20">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="font-['Outfit'] text-base font-bold text-slate-800 dark:text-slate-100">Listado General de Expedientes Eliminados</h3>
+        <button @click="fetchGeneral" class="bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 border border-slate-900/5 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-350 dark:border-white/10 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition duration-200">🔄 Actualizar</button>
       </div>
 
       <!-- Filtros de búsqueda -->
-      <div class="filters-panel">
-        <div class="filter-field search-field">
-          <label class="filter-label">🔍 Buscar Asociado</label>
+      <div class="flex flex-col sm:flex-row items-end gap-4 mb-5 bg-slate-900/2 dark:bg-white/2 border border-dashed border-slate-900/10 dark:border-white/5 p-3 rounded-xl">
+        <div class="flex flex-col gap-1 flex-1 w-full">
+          <label class="text-[0.65rem] font-extrabold uppercase text-slate-500 dark:text-slate-400">🔍 Buscar Asociado</label>
           <input 
             type="text" 
             v-model="searchAsociadoQuery" 
             placeholder="Escribe el nombre del asociado..." 
-            class="premium-filter-input"
+            class="w-full bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 text-xs font-semibold outline-none focus:border-sky-500 dark:focus:border-sky-500 transition duration-200"
           />
         </div>
-        <div class="filter-field date-field">
-          <label class="filter-label">📅 Fecha de Eliminación</label>
+        <div class="flex flex-col gap-1 flex-1 w-full">
+          <label class="text-[0.65rem] font-extrabold uppercase text-slate-500 dark:text-slate-400">📅 Fecha de Eliminación</label>
           <input 
             type="date" 
             v-model="filterDateQuery" 
-            class="premium-filter-input"
+            class="w-full bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 text-xs font-semibold outline-none focus:border-sky-500 dark:focus:border-sky-500 transition duration-200"
           />
         </div>
         <button 
           v-if="searchAsociadoQuery || filterDateQuery" 
           @click="searchAsociadoQuery = ''; filterDateQuery = ''" 
-          class="btn-clear-filters"
+          class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-3.5 py-2 rounded-xl text-[0.72rem] font-bold cursor-pointer transition duration-200 hover:bg-rose-50 hover:text-white hover:border-rose-500 whitespace-nowrap w-full sm:w-auto"
         >
           Limpiar Filtros
         </button>
       </div>
 
-      <div class="table-wrapper">
-        <table class="premium-table">
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <table class="w-full border-collapse text-left">
           <thead>
             <tr>
-              <th>Asociado</th>
-              <th>Portafolio / Subcategoría</th>
-              <th>Págs</th>
-              <th>Eliminado Por</th>
-              <th>Fecha Eliminado</th>
-              <th>Descargado</th>
-              <th>Buzón Asignado</th>
-              <th>Acciones</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Asociado</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Portafolio / Subcategoría</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Págs</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Eliminado Por</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Fecha Eliminado</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Descargado</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Buzón Asignado</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="isLoading" class="table-loading-row">
+            <tr v-if="isLoading">
               <td colspan="8" class="text-center py-8 text-slate-400">Cargando elementos...</td>
             </tr>
             <tr v-else-if="filteredDocsGeneral.length === 0">
               <td colspan="8" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
             </tr>
-            <tr v-for="doc in filteredDocsGeneral" :key="doc.id" class="table-row hover:bg-slate-800/10 dark:hover:bg-slate-800/30">
-              <td class="font-bold text-slate-700 dark:text-slate-200">{{ doc.nombre_asociado }}</td>
-              <td>
+            <tr v-for="doc in filteredDocsGeneral" :key="doc.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60">{{ doc.nombre_asociado }}</td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60">
                 <div class="flex flex-col">
-                  <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">{{ doc.nombre_categoria }}</span>
+                  <span class="text-[0.62rem] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">{{ doc.nombre_categoria }}</span>
                   <span class="font-semibold text-sky-600 dark:text-sky-400">{{ doc.nombre_subcategoria }}</span>
                 </div>
               </td>
-              <td><span class="badge-pages">{{ doc.total_paginas }} págs</span></td>
-              <td class="text-slate-600 dark:text-slate-300">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
-              <td class="text-xs text-slate-400 font-medium">{{ formatDate(doc.fecha_eliminacion) }}</td>
-              <td>
-                <span v-if="doc.descargado" class="downloaded-badge" :title="'Descargado el: ' + formatDate(doc.fecha_descarga)">
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60"><span class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-1 rounded-md text-[0.68rem] font-bold">{{ doc.total_paginas }} págs</span></td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800/60">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
+              <td class="px-3.5 py-2.5 text-xs text-slate-400 font-medium border-b border-slate-100 dark:border-slate-800/60">{{ formatDate(doc.fecha_eliminacion) }}</td>
+              <td class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60">
+                <span v-if="doc.descargado" class="bg-emerald-500/10 text-emerald-600 border border-emerald-500/15 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[0.68rem] font-bold inline-block whitespace-nowrap" :title="'Descargado el: ' + formatDate(doc.fecha_descarga)">
                   📥 Sí
                 </span>
-                <span v-else class="pending-badge">
+                <span v-else class="bg-amber-500/10 text-amber-600 border border-amber-500/15 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/20 px-1.5 py-0.5 rounded-md text-[0.68rem] font-bold inline-block whitespace-nowrap">
                   ⏳ Pendiente
                 </span>
               </td>
-              <td>
-                <span v-if="doc.usuario_asignado" class="assigned-user-badge">
+              <td class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60">
+                <span v-if="doc.usuario_asignado" class="bg-emerald-500/10 text-emerald-600 border border-emerald-500/15 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20 px-2 py-1 rounded-lg text-[0.68rem] font-bold">
                   👤 {{ doc.usuario_asignado.name }}
                 </span>
-                <span v-else class="unassigned-badge">📭 Sin Asignar</span>
+                <span v-else class="bg-amber-500/10 text-amber-650 border border-amber-500/15 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/20 px-2 py-1 rounded-lg text-[0.68rem] font-bold">📭 Sin Asignar</span>
               </td>
-              <td>
+              <td class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60">
                 <div class="flex items-center gap-2">
-                  <button @click="openAssign(doc)" class="btn-action btn-assign" title="Asignar a Buzón de Usuario">
+                  <button @click="openAssign(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/10" title="Asignar a Buzón de Usuario">
                     🔑 Asignar
                   </button>
-                  <button @click="handleDownload(doc)" class="btn-action btn-download" title="Descargar PDF">
+                  <button @click="handleDownload(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/10" title="Descargar PDF">
                     📥 Descargar
                   </button>
-                  <button @click="handleDeletePermanent(doc)" class="btn-action btn-delete" title="Eliminar Permanentemente">
+                  <button @click="handleDeletePermanent(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-rose-500 hover:bg-rose-600 text-white shadow-sm shadow-rose-500/10" title="Eliminar Permanentemente">
                     🗑️ Depurar
                   </button>
                 </div>
@@ -464,72 +464,72 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
     </div>
 
     <!-- TAB PANEL: MI BUZÓN PERSONAL -->
-    <div v-else class="glass-card panel-papelera">
-      <div class="panel-header-simple">
-        <h3>Documentos Asignados a Mi Buzón para Descarga</h3>
-        <button @click="fetchBuzon" class="btn-refresh">🔄 Actualizar</button>
+    <div v-else class="bg-white/70 backdrop-blur-lg border border-slate-900/5 dark:border-white/5 rounded-2xl p-5 shadow-lg shadow-slate-900/2 dark:bg-slate-900/45 dark:shadow-black/20">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="font-['Outfit'] text-base font-bold text-slate-800 dark:text-slate-100">Documentos Asignados a Mi Buzón para Descarga</h3>
+        <button @click="fetchBuzon" class="bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 border border-slate-900/5 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-350 dark:border-white/10 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition duration-200">🔄 Actualizar</button>
       </div>
 
       <!-- Filtros de búsqueda -->
-      <div class="filters-panel">
-        <div class="filter-field search-field">
-          <label class="filter-label">🔍 Buscar Asociado</label>
+      <div class="flex flex-col sm:flex-row items-end gap-4 mb-5 bg-slate-900/2 dark:bg-white/2 border border-dashed border-slate-900/10 dark:border-white/5 p-3 rounded-xl">
+        <div class="flex flex-col gap-1 flex-1 w-full">
+          <label class="text-[0.65rem] font-extrabold uppercase text-slate-500 dark:text-slate-400">🔍 Buscar Asociado</label>
           <input 
             type="text" 
             v-model="searchAsociadoQuery" 
             placeholder="Escribe el nombre del asociado..." 
-            class="premium-filter-input"
+            class="w-full bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 text-xs font-semibold outline-none focus:border-sky-500 dark:focus:border-sky-500 transition duration-200"
           />
         </div>
-        <div class="filter-field date-field">
-          <label class="filter-label">📅 Fecha de Eliminación</label>
+        <div class="flex flex-col gap-1 flex-1 w-full">
+          <label class="text-[0.65rem] font-extrabold uppercase text-slate-500 dark:text-slate-400">📅 Fecha de Eliminación</label>
           <input 
             type="date" 
             v-model="filterDateQuery" 
-            class="premium-filter-input"
+            class="w-full bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-200 text-xs font-semibold outline-none focus:border-sky-500 dark:focus:border-sky-500 transition duration-200"
           />
         </div>
         <button 
           v-if="searchAsociadoQuery || filterDateQuery" 
           @click="searchAsociadoQuery = ''; filterDateQuery = ''" 
-          class="btn-clear-filters"
+          class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-3.5 py-2 rounded-xl text-[0.72rem] font-bold cursor-pointer transition duration-200 hover:bg-rose-50 hover:text-white hover:border-rose-500 whitespace-nowrap w-full sm:w-auto"
         >
           Limpiar Filtros
         </button>
       </div>
 
-      <div class="table-wrapper">
-        <table class="premium-table">
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <table class="w-full border-collapse text-left">
           <thead>
             <tr>
-              <th>Asociado</th>
-              <th>Portafolio / Subcategoría</th>
-              <th>Páginas</th>
-              <th>Eliminado Por</th>
-              <th>Asignado El</th>
-              <th>Acción</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Asociado</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Portafolio / Subcategoría</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Páginas</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Eliminado Por</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Asignado El</th>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="isLoading" class="table-loading-row">
+            <tr v-if="isLoading">
               <td colspan="6" class="text-center py-8 text-slate-400">Cargando elementos...</td>
             </tr>
             <tr v-else-if="filteredDocsBuzon.length === 0">
               <td colspan="6" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
             </tr>
-            <tr v-for="doc in filteredDocsBuzon" :key="doc.id" class="table-row hover:bg-slate-800/10 dark:hover:bg-slate-800/30">
-              <td class="font-bold text-slate-700 dark:text-slate-200">{{ doc.nombre_asociado }}</td>
-              <td>
+            <tr v-for="doc in filteredDocsBuzon" :key="doc.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60">{{ doc.nombre_asociado }}</td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60">
                 <div class="flex flex-col">
-                  <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">{{ doc.nombre_categoria }}</span>
+                  <span class="text-[0.62rem] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">{{ doc.nombre_categoria }}</span>
                   <span class="font-semibold text-sky-600 dark:text-sky-400">{{ doc.nombre_subcategoria }}</span>
                 </div>
               </td>
-              <td><span class="badge-pages">{{ doc.total_paginas }} págs</span></td>
-              <td class="text-slate-600 dark:text-slate-300">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
-              <td class="text-xs text-slate-400 font-medium">{{ formatDate(doc.fecha_asignacion) }}</td>
-              <td>
-                <button @click="handleDownload(doc)" class="btn-action btn-download" title="Descargar archivo">
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60"><span class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-1 rounded-md text-[0.68rem] font-bold">{{ doc.total_paginas }} págs</span></td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800/60">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
+              <td class="px-3.5 py-2.5 text-xs text-slate-400 font-medium border-b border-slate-100 dark:border-slate-800/60">{{ formatDate(doc.fecha_asignacion) }}</td>
+              <td class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60">
+                <button @click="handleDownload(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/10" title="Descargar archivo">
                   📥 Descargar PDF
                 </button>
               </td>
@@ -540,21 +540,21 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
     </div>
 
     <!-- MODAL DE ASIGNACIÓN -->
-    <div v-if="showAssignModal" class="modal-backdrop">
-      <div class="glass-modal animate-in fade-in zoom-in-95">
-        <div class="modal-header">
-          <h3>Asignar Documento a Buzón</h3>
-          <button @click="showAssignModal = false" class="close-btn">&times;</button>
+    <div v-if="showAssignModal" class="fixed inset-0 bg-slate-900/40 dark:bg-slate-955/75 backdrop-blur-md flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-[90%] max-w-[440px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+          <h3 class="font-['Outfit'] text-base font-bold text-slate-800 dark:text-slate-100">Asignar Documento a Buzón</h3>
+          <button @click="showAssignModal = false" class="bg-transparent text-slate-400 hover:text-slate-900 dark:hover:text-white text-xl border-0 cursor-pointer">&times;</button>
         </div>
-        <div class="modal-body" v-if="selectedDoc">
-          <p class="text-sm text-slate-300 mb-4">
+        <div class="p-5" v-if="selectedDoc">
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-4">
             Elige qué usuario será responsable de descargar el archivo:
             <strong>{{ selectedDoc.nombre_subcategoria }}</strong> del asociado <strong>{{ selectedDoc.nombre_asociado }}</strong>.
           </p>
 
-          <div class="form-group">
-            <label class="form-label">Destinatario</label>
-            <select v-model="selectedUserId" class="premium-select">
+          <div class="flex flex-col gap-2">
+            <label class="text-[0.7rem] font-extrabold text-slate-450 uppercase">Destinatario</label>
+            <select v-model="selectedUserId" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-slate-100 text-xs font-semibold outline-none focus:border-sky-500">
               <option value="" disabled selected>Seleccione un usuario...</option>
               <option v-for="user in usuarios" :key="user.id" :value="user.id">
                 {{ user.name }}
@@ -562,9 +562,9 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
             </select>
           </div>
         </div>
-        <div class="modal-footer">
-          <button @click="showAssignModal = false" class="btn-cancel">Cancelar</button>
-          <button @click="handleAssign" class="btn-confirm" :disabled="selectedUserId === ''">
+        <div class="p-5 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+          <button @click="showAssignModal = false" class="bg-slate-900/5 hover:bg-slate-900/10 text-slate-650 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-300 border border-slate-900/5 dark:border-white/10 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition duration-200">Cancelar</button>
+          <button @click="handleAssign" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition duration-200 border-0 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="selectedUserId === ''">
             Confirmar Asignación
           </button>
         </div>
@@ -572,585 +572,3 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
     </div>
   </div>
 </template>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
-
-.papelera-container {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  padding: 1.25rem;
-  min-height: 80vh;
-}
-
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-/* Light Mode (Default) */
-.header-title h1 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #1e293b;
-}
-
-.header-title p {
-  font-size: 0.82rem;
-  color: #64748b;
-  margin-top: 0.2rem;
-}
-
-/* Dark Mode Overrides */
-:global(.dark) .header-title h1 {
-  color: #f1f5f9;
-}
-:global(.dark) .header-title p {
-  color: #94a3b8;
-}
-
-/* TABS NAVEGACIÓN */
-.tabs-navigation {
-  display: flex;
-  background: rgba(226, 232, 240, 0.8);
-  padding: 0.25rem;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  margin-bottom: 1.25rem;
-  max-width: fit-content;
-}
-
-.tab-btn {
-  padding: 0.45rem 1rem;
-  border-radius: 9px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #475569;
-  transition: all 0.3s;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-}
-
-.tab-btn:hover {
-  color: #0f172a;
-}
-
-.tab-btn.active {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: #ffffff;
-  box-shadow: 0 3px 8px rgba(14, 165, 233, 0.2);
-}
-
-:global(.dark) .tabs-navigation {
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-:global(.dark) .tab-btn {
-  color: #94a3b8;
-}
-:global(.dark) .tab-btn:hover {
-  color: #f1f5f9;
-}
-
-/* CARDS */
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  border-radius: 18px;
-  padding: 1.25rem;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.03);
-}
-
-.panel-header-simple {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
-}
-
-.panel-header-simple h3 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.btn-refresh {
-  background: rgba(15, 23, 42, 0.04);
-  color: #475569;
-  padding: 0.35rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-refresh:hover {
-  background: rgba(15, 23, 42, 0.08);
-  color: #0f172a;
-}
-
-:global(.dark) .glass-card {
-  background: rgba(30, 41, 59, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-}
-:global(.dark) .panel-header-simple h3 {
-  color: #f8fafc;
-}
-:global(.dark) .btn-refresh {
-  background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-:global(.dark) .btn-refresh:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-/* TABLA PREMIUM */
-.table-wrapper {
-  overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-.premium-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.premium-table th {
-  background: rgba(241, 245, 249, 0.8);
-  padding: 0.65rem 0.85rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: #475569;
-  letter-spacing: 0.05em;
-  border-bottom: 1.5px solid rgba(15, 23, 42, 0.08);
-}
-
-.premium-table td {
-  padding: 0.65rem 0.85rem;
-  font-size: 0.78rem;
-  color: #334155;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
-}
-
-.table-row {
-  transition: background-color 0.2s;
-}
-
-.table-row:hover {
-  background-color: rgba(241, 245, 249, 0.6);
-}
-
-:global(.dark) .table-wrapper {
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-:global(.dark) .premium-table th {
-  background: rgba(15, 23, 42, 0.5);
-  color: #94a3b8;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
-}
-:global(.dark) .premium-table td {
-  color: #e2e8f0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-:global(.dark) .table-row:hover {
-  background-color: rgba(255, 255, 255, 0.03);
-}
-
-.badge-pages {
-  background: rgba(14, 165, 233, 0.1);
-  color: #0284c7;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-:global(.dark) .badge-pages {
-  color: #38bdf8;
-}
-
-.assigned-user-badge {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  border: 1px solid rgba(16, 185, 129, 0.15);
-}
-
-:global(.dark) .assigned-user-badge {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.unassigned-badge {
-  background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  border: 1px solid rgba(245, 158, 11, 0.15);
-}
-
-:global(.dark) .unassigned-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-/* ACCIONES */
-.btn-action {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-assign {
-  background: #10b981;
-  color: #ffffff;
-}
-
-.btn-assign:hover {
-  background: #059669;
-  box-shadow: 0 3px 6px rgba(16, 185, 129, 0.15);
-}
-
-.btn-download {
-  background: #0ea5e9;
-  color: #ffffff;
-}
-
-.btn-download:hover {
-  background: #0284c7;
-  box-shadow: 0 3px 6px rgba(14, 165, 233, 0.15);
-}
-
-.btn-delete {
-  background: #ef4444;
-  color: #ffffff;
-}
-
-.btn-delete:hover {
-  background: #dc2626;
-  box-shadow: 0 3px 6px rgba(239, 68, 68, 0.15);
-}
-
-/* MODAL */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-:global(.dark) .modal-backdrop {
-  background: rgba(15, 23, 42, 0.75);
-}
-
-.glass-modal {
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  width: 90%;
-  max-width: 440px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
-  overflow: hidden;
-}
-
-:global(.dark) .glass-modal {
-  background: rgba(30, 41, 59, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-  padding: 1.25rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-:global(.dark) .modal-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.modal-header h3 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-:global(.dark) .modal-header h3 {
-  color: #f8fafc;
-}
-
-.close-btn {
-  background: transparent;
-  color: #64748b;
-  font-size: 1.25rem;
-  border: none;
-  cursor: pointer;
-}
-
-.close-btn:hover {
-  color: #0f172a;
-}
-
-:global(.dark) .close-btn:hover {
-  color: #ffffff;
-}
-
-.modal-body {
-  padding: 1.25rem;
-}
-
-.modal-body p {
-  color: #475569;
-  font-size: 0.8rem;
-}
-
-:global(.dark) .modal-body p {
-  color: #cbd5e1;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.form-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-:global(.dark) .form-label {
-  color: #94a3b8;
-}
-
-.premium-select {
-  background: #f8fafc;
-  border: 1.5px solid rgba(15, 23, 42, 0.1);
-  border-radius: 10px;
-  padding: 0.6rem 0.85rem;
-  color: #1e293b;
-  outline: none;
-  font-weight: 600;
-  font-size: 0.8rem;
-}
-
-.premium-select:focus {
-  border-color: #0ea5e9;
-}
-
-:global(.dark) .premium-select {
-  background: #1e293b;
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  color: #f8fafc;
-}
-
-.modal-footer {
-  padding: 1.25rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-:global(.dark) .modal-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.btn-cancel {
-  background: rgba(15, 23, 42, 0.04);
-  color: #475569;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  font-size: 0.8rem;
-}
-
-.btn-cancel:hover {
-  background: rgba(15, 23, 42, 0.08);
-  color: #0f172a;
-}
-
-:global(.dark) .btn-cancel {
-  background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-:global(.dark) .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-.btn-confirm {
-  background: #0ea5e9;
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  font-size: 0.8rem;
-}
-
-.btn-confirm:hover:not(:disabled) {
-  background: #0284c7;
-}
-
-.btn-confirm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* FILTROS */
-.filters-panel {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  background: rgba(15, 23, 42, 0.02);
-  border: 1px dashed rgba(15, 23, 42, 0.08);
-  padding: 0.75rem;
-  border-radius: 12px;
-}
-
-:global(.dark) .filters-panel {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.06);
-}
-
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  flex: 1;
-}
-
-.search-field {
-  flex: 2.5;
-}
-
-.filter-label {
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: #64748b;
-}
-
-:global(.dark) .filter-label {
-  color: #94a3b8;
-}
-
-.premium-filter-input {
-  background: #ffffff;
-  border: 1.5px solid rgba(15, 23, 42, 0.08);
-  border-radius: 10px;
-  padding: 0.45rem 0.75rem;
-  color: #1e293b;
-  outline: none;
-  font-weight: 600;
-  transition: border-color 0.2s;
-  width: 100%;
-  font-size: 0.75rem;
-}
-
-.premium-filter-input:focus {
-  border-color: #0ea5e9;
-}
-
-:global(.dark) .premium-filter-input {
-  background: #1e293b;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
-
-.btn-clear-filters {
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.45rem 0.85rem;
-  border-radius: 10px;
-  border: 1.5px solid rgba(239, 68, 68, 0.15);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-clear-filters:hover {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-}
-
-.downloaded-badge {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  white-space: nowrap;
-  display: inline-block;
-}
-
-:global(.dark) .downloaded-badge {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.2);
-}
-
-.pending-badge {
-  background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  border: 1px solid rgba(245, 158, 11, 0.15);
-  white-space: nowrap;
-  display: inline-block;
-}
-
-:global(.dark) .pending-badge {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.2);
-}
-</style>

@@ -277,49 +277,61 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="categorias-container">
-    <div class="header-section">
-      <div class="header-title">
-        <h1>Categorías y Subcategorías</h1>
-        <p>Configura las familias de documentos y sus clasificaciones.</p>
+  <div class="p-8 min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 font-sans transition-colors duration-300">
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-black text-slate-800 dark:text-slate-100 mb-2">Categorías y Subcategorías</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Configura las familias de documentos y sus clasificaciones.</p>
       </div>
-      <button @click="syncPuestos" :disabled="isSyncing" class="btn-sync">
-        <svg v-if="!isSyncing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-        <span v-else class="spinner"></span>
+      <button @click="syncPuestos" :disabled="isSyncing" class="bg-slate-900 text-white px-5 py-3 rounded-xl flex items-center gap-3 font-semibold transition duration-200 hover:bg-slate-700 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 shadow-md">
+        <svg v-if="!isSyncing" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-[18px] h-[18px]"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <span v-else class="w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
         {{ isSyncing ? 'Sincronizando...' : 'Sincronizar Puestos' }}
       </button>
     </div>
 
-    <div class="main-grid">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-8 h-[calc(100vh-200px)]">
       <!-- PANEL IZQUIERDO: CATEGORIAS -->
-      <div class="glass-card panel-categorias">
-        <div class="panel-header">
-          <div class="search-bar">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input v-model="searchQuery" type="text" placeholder="Buscar categoría...">
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg shadow-slate-200/50 flex flex-col dark:bg-slate-900/80 dark:border-slate-800/80 dark:shadow-slate-950/20 overflow-hidden">
+        <div class="p-6 border-b border-black/5 dark:border-slate-800/50 flex justify-between items-center gap-4">
+          <div class="flex-1 flex items-center bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 dark:bg-slate-800/50 dark:border-slate-700/50">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-[18px] h-[18px] text-slate-400 mr-2"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input v-model="searchQuery" type="text" placeholder="Buscar categoría..." class="border-none bg-transparent w-full outline-none text-slate-800 dark:text-slate-200 dark:placeholder-slate-500">
           </div>
-          <button @click="openModalCategoria()" class="btn-add">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          <button @click="openModalCategoria()" class="bg-sky-500 text-white p-2.5 rounded-lg cursor-pointer transition duration-200 hover:bg-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
           </button>
         </div>
 
-        <div class="list-container">
-          <div v-if="isLoading" class="loader">Cargando...</div>
+        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div v-if="isLoading" class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Cargando...</div>
           <div 
             v-for="cat in filteredCategorias" 
             :key="cat.id" 
-            :class="['list-item', { active: selectedCategoria?.id === cat.id, inactive: !cat.estado }]"
+            :class="[
+              'p-4 mb-3 rounded-xl bg-white border border-transparent cursor-pointer flex justify-between items-center transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/60 dark:hover:border-slate-700', 
+              { 
+                'border-sky-500 bg-sky-50/50 dark:bg-sky-950/40 dark:border-sky-500': selectedCategoria?.id === cat.id, 
+                'opacity-50': !cat.estado 
+              }
+            ]"
             @click="selectedCategoria = cat"
           >
-            <div class="item-info">
-              <span class="item-name">{{ cat.nombre }}</span>
-              <span class="item-count">{{ cat.subcategorias?.length || 0 }} subcategorías</span>
+            <div class="flex flex-col gap-1">
+              <span class="font-semibold text-slate-800 dark:text-slate-200">{{ cat.nombre }}</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400">{{ cat.subcategorias?.length || 0 }} subcategorías</span>
             </div>
-            <div class="item-actions">
-              <button @click.stop="openModalCategoria(cat)" class="btn-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+            <div class="flex items-center gap-3">
+              <button @click.stop="openModalCategoria(cat)" class="bg-transparent border-0 text-slate-500 cursor-pointer p-1 transition duration-200 hover:text-sky-500 dark:text-slate-400 dark:hover:text-sky-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-[18px] h-[18px]"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
               </button>
-              <button @click.stop="toggleEstadoCategoria(cat)" :class="['btn-status', { active: cat.estado }]">
+              <button @click.stop="toggleEstadoCategoria(cat)" 
+                      :class="[
+                        'px-2.5 py-1 rounded-md text-[0.7rem] font-black border-0 cursor-pointer transition-colors',
+                        cat.estado 
+                          ? 'bg-emerald-100 text-emerald-850 dark:bg-emerald-950/40 dark:text-emerald-400' 
+                          : 'bg-rose-100 text-rose-850 dark:bg-rose-950/40 dark:text-rose-400'
+                      ]">
                 {{ cat.estado ? 'ON' : 'OFF' }}
               </button>
             </div>
@@ -328,422 +340,127 @@ onMounted(() => {
       </div>
 
       <!-- PANEL DERECHO: SUBCATEGORIAS -->
-      <div class="glass-card panel-subcategorias">
+      <div class="bg-white/80 backdrop-blur-md border border-white/40 rounded-2xl shadow-lg shadow-slate-200/50 flex flex-col dark:bg-slate-900/80 dark:border-slate-800/80 dark:shadow-slate-950/20 overflow-hidden">
         <template v-if="selectedCategoria">
-          <div class="panel-header">
-            <h3>Subcategorías de: <span>{{ selectedCategoria.nombre }}</span></h3>
-            <button @click="openModalSubcategoria()" class="btn-add">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          <div class="p-6 border-b border-black/5 dark:border-slate-800/50 flex justify-between items-center gap-4">
+            <h3 class="font-extrabold text-slate-800 dark:text-slate-100">Subcategorías de: <span class="text-sky-500 font-black">{{ selectedCategoria.nombre }}</span></h3>
+            <button @click="openModalSubcategoria()" class="bg-sky-500 text-white px-4 py-2.5 rounded-lg cursor-pointer flex items-center gap-2 font-semibold transition duration-200 hover:bg-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
               Nueva Subcategoría
             </button>
           </div>
 
-          <div class="list-container">
-            <div v-if="!selectedCategoria.subcategorias?.length" class="empty-state">
+          <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div v-if="!selectedCategoria.subcategorias?.length" class="flex flex-col items-center justify-center h-full text-slate-400 gap-4 dark:text-slate-500 py-16">
               <p>No hay subcategorías en esta familia.</p>
             </div>
             <div 
               v-for="sub in selectedCategoria.subcategorias" 
               :key="sub.id" 
-              :class="['list-item', { inactive: !sub.estado }]"
+              :class="['p-4 mb-3 rounded-xl bg-white border border-transparent flex justify-between items-center transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/60 dark:hover:border-slate-700', { 'opacity-50': !sub.estado }]"
             >
-              <div class="item-info">
-                <span class="item-name">{{ sub.nombre }}</span>
-                <span class="status-dot" :class="{ active: sub.estado }"></span>
+              <div class="flex items-center gap-3">
+                <span class="font-semibold text-slate-800 dark:text-slate-200">{{ sub.nombre }}</span>
+                <span class="w-2 h-2 rounded-full" :class="sub.estado ? 'bg-emerald-500' : 'bg-rose-500'"></span>
               </div>
-              <div class="item-actions">
-                <button @click="openModalSubcategoria(sub)" class="btn-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              <div class="flex items-center gap-3">
+                <button @click="openModalSubcategoria(sub)" class="bg-transparent border-0 text-slate-500 cursor-pointer p-1 transition duration-200 hover:text-sky-500 dark:text-slate-400 dark:hover:text-sky-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-[18px] h-[18px]"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                 </button>
-                <button @click="toggleEstadoSubcategoria(sub)" :class="['btn-status', { active: sub.estado }]">
+                <button @click="toggleEstadoSubcategoria(sub)" 
+                        :class="[
+                          'px-2.5 py-1 rounded-md text-[0.7rem] font-black border-0 cursor-pointer transition-colors',
+                          sub.estado 
+                            ? 'bg-emerald-100 text-emerald-850 dark:bg-emerald-950/40 dark:text-emerald-400' 
+                            : 'bg-rose-100 text-rose-850 dark:bg-rose-950/40 dark:text-rose-400'
+                        ]">
                   {{ sub.estado ? 'Activo' : 'Inactivo' }}
                 </button>
               </div>
             </div>
           </div>
         </template>
-        <div v-else class="empty-state">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-          <p>Selecciona una categoría para gestionar sus subcategorías.</p>
+        <div v-else class="flex flex-col items-center justify-center h-full text-slate-400 gap-4 dark:text-slate-500 p-8">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-12 h-12 text-slate-350 dark:text-slate-600"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <p class="text-sm font-semibold">Selecciona una categoría para gestionar sus subcategorías.</p>
         </div>
       </div>
     </div>
 
     <!-- MODAL CATEGORIA -->
-    <div v-if="showModalCategoria" class="modal-overlay">
-      <div class="glass-card modal-content">
-        <h3>{{ editingCategoria ? 'Editar' : 'Nueva' }} Categoría</h3>
-        <div class="form-group">
-          <label>Nombre de Categoría</label>
-          <input v-model="formCategoria.nombre" type="text" placeholder="Ej. Datos Personales">
+    <div v-if="showModalCategoria" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-xs">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-[420px]">
+        <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 mb-4">{{ editingCategoria ? 'Editar' : 'Nueva' }} Categoría</h3>
+        <div class="my-6">
+          <label class="block mb-2 font-semibold text-slate-600 dark:text-slate-300 text-sm">Nombre de Categoría</label>
+          <input v-model="formCategoria.nombre" type="text" placeholder="Ej. Datos Personales" class="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-500 transition-all">
         </div>
-        <div class="modal-actions">
-          <button @click="showModalCategoria = false" class="btn-cancel">Cancelar</button>
-          <button @click="saveCategoria" class="btn-save">Guardar</button>
+        <div class="flex justify-end gap-4">
+          <button @click="showModalCategoria = false" class="bg-slate-100 border-0 px-6 py-3 rounded-lg cursor-pointer font-semibold text-slate-750 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/80 transition duration-200">Cancelar</button>
+          <button @click="saveCategoria" class="bg-sky-500 border-0 px-6 py-3 rounded-lg cursor-pointer font-semibold text-white hover:bg-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500 transition duration-200">Guardar</button>
         </div>
       </div>
     </div>
 
     <!-- MODAL SUBCATEGORIA -->
-    <div v-if="showModalSubcategoria" class="modal-overlay">
-      <div class="glass-card modal-content">
-        <h3>{{ editingSubcategoria ? 'Editar' : 'Nueva' }} Subcategoría</h3>
-        <div class="form-group">
-          <label>Nombre de Subcategoría</label>
-          <input v-model="formSubcategoria.nombre" type="text" placeholder="Ej. DPI">
+    <div v-if="showModalSubcategoria" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-xs">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-8 w-full max-w-[500px]">
+        <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 mb-4">{{ editingSubcategoria ? 'Editar' : 'Nueva' }} Subcategoría</h3>
+        <div class="my-6">
+          <label class="block mb-2 font-semibold text-slate-600 dark:text-slate-300 text-sm">Nombre de Subcategoría</label>
+          <input v-model="formSubcategoria.nombre" type="text" placeholder="Ej. DPI" class="w-full px-4 py-3 rounded-lg border border-slate-200 outline-none text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-500 transition-all">
         </div>
-        <div class="form-group">
-          <label>Puestos con acceso a crear carpeta</label>
+        <div class="my-6">
+          <label class="block mb-2 font-semibold text-slate-600 dark:text-slate-300 text-sm">Puestos con acceso a crear carpeta</label>
           
-          <div class="puestos-search-bar">
+          <div class="flex flex-col gap-2 mb-3">
             <input 
               v-model="searchPuestoQuery" 
               type="text" 
               placeholder="🔍 Buscar puesto por nombre..." 
-              class="puesto-search-input"
+              class="w-full px-3 py-2 rounded-md border border-slate-350 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-500 transition-all"
             />
-            <div class="puesto-actions-buttons">
-              <button type="button" @click="selectAllPuestos" class="btn-mini-action">Seleccionar todos</button>
-              <button type="button" @click="deselectAllPuestos" class="btn-mini-action">Limpiar todos</button>
+            <div class="flex gap-2 justify-end">
+              <button type="button" @click="selectAllPuestos" class="bg-slate-100 hover:bg-slate-200 text-slate-650 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-semibold cursor-pointer dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 transition duration-200">Seleccionar todos</button>
+              <button type="button" @click="deselectAllPuestos" class="bg-slate-100 hover:bg-slate-200 text-slate-650 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-semibold cursor-pointer dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 transition duration-200">Limpiar todos</button>
             </div>
           </div>
 
-          <div class="puestos-selector-header">
-            <span class="puesto-col-name">Puesto</span>
-            <span class="puesto-col-perm">👁️ Ver</span>
-            <span class="puesto-col-perm">✏️ Editar</span>
+          <div class="grid grid-cols-[2.2fr_1fr_1fr] items-center p-2 font-extrabold text-[0.72rem] uppercase text-slate-500 border-b-2 border-slate-200 dark:text-slate-400 dark:border-slate-700">
+            <span class="text-left">Puesto</span>
+            <span class="text-center">👁️ Ver</span>
+            <span class="text-center">✏️ Editar</span>
           </div>
 
-          <div class="puestos-selector">
-            <div v-for="puesto in filteredPuestos" :key="puesto.id" class="puesto-option-row">
-              <span class="puesto-label">{{ puesto.nombre }}</span>
-              <span class="puesto-checkbox">
+          <div class="max-h-[200px] overflow-y-auto bg-slate-50 border border-slate-200 rounded-lg p-2 custom-scrollbar dark:bg-slate-800/50 dark:border-slate-700">
+            <div v-for="puesto in filteredPuestos" :key="puesto.id" class="grid grid-cols-[2.2fr_1fr_1fr] items-center p-2 border-b border-slate-100 last:border-0 dark:border-slate-800">
+              <span class="text-xs text-slate-750 dark:text-slate-300 text-left">{{ puesto.nombre }}</span>
+              <span class="flex justify-center">
                 <input 
                   type="checkbox" 
                   :id="'puesto-ver-' + puesto.id" 
                   v-model="puestosPermissions[puesto.id].ver"
+                  class="w-4 h-4 cursor-pointer accent-sky-500"
                 >
               </span>
-              <span class="puesto-checkbox">
+              <span class="flex justify-center">
                 <input 
                   type="checkbox" 
                   :id="'puesto-editar-' + puesto.id" 
                   v-model="puestosPermissions[puesto.id].editar"
                   @change="toggleEditar(puesto.id)"
+                  class="w-4 h-4 cursor-pointer accent-sky-500"
                 >
               </span>
             </div>
           </div>
-          <p class="helper-text">Si no autorizas ningún permiso (ambos vacíos), el puesto no tendrá acceso a este folder.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-450 mt-2">Si no autorizas ningún permiso (ambos vacíos), el puesto no tendrá acceso a este folder.</p>
         </div>
-        <div class="modal-actions">
-          <button @click="showModalSubcategoria = false" class="btn-cancel">Cancelar</button>
-          <button @click="saveSubcategoria" class="btn-save">Guardar</button>
+        <div class="flex justify-end gap-4">
+          <button @click="showModalSubcategoria = false" class="bg-slate-100 border-0 px-6 py-3 rounded-lg cursor-pointer font-semibold text-slate-750 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/80 transition duration-200">Cancelar</button>
+          <button @click="saveSubcategoria" class="bg-sky-500 border-0 px-6 py-3 rounded-lg cursor-pointer font-semibold text-white hover:bg-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500 transition duration-200">Guardar</button>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.categorias-container {
-  padding: 2rem;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-  font-family: 'Inter', sans-serif;
-}
-
-.header-section {
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-section h1 {
-  font-size: 1.8rem;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.header-section p {
-  color: #64748b;
-}
-
-.main-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 2rem;
-  height: calc(100vh - 200px);
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.search-bar {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.search-bar svg { width: 18px; color: #94a3b8; margin-right: 0.5rem; }
-.search-bar input { border: none; background: transparent; width: 100%; outline: none; color: #1e293b; }
-
-.btn-add {
-  background: #0ea5e9;
-  color: white;
-  border: none;
-  padding: 0.6rem;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  transition: 0.2s;
-}
-
-.btn-add svg { width: 20px; }
-.btn-add:hover { background: #0284c7; }
-
-.list-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.list-item {
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  border-radius: 12px;
-  background: white;
-  border: 1px solid transparent;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: 0.2s;
-}
-
-.list-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-.list-item.active { border-color: #0ea5e9; background: #f0f9ff; }
-.list-item.inactive { opacity: 0.6; grayscale: 0.5; }
-
-.item-info { display: flex; flex-direction: column; gap: 0.25rem; }
-.item-name { font-weight: 600; color: #1e293b; }
-.item-count { font-size: 0.8rem; color: #64748b; }
-
-.item-actions { display: flex; align-items: center; gap: 0.75rem; }
-
-.btn-icon { background: transparent; border: none; color: #64748b; cursor: pointer; padding: 0.25rem; }
-.btn-icon svg { width: 18px; }
-.btn-icon:hover { color: #0ea5e9; }
-
-.btn-status {
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-status.active { background: #dcfce7; color: #166534; }
-.btn-status:not(.active) { background: #fee2e2; color: #991b1b; }
-
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
-.status-dot.active { background: #10b981; }
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #94a3b8;
-  gap: 1rem;
-}
-
-.empty-state svg { width: 48px; }
-
-/* MODAL */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-}
-
-.form-group { margin: 1.5rem 0; }
-.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569; }
-.form-group input { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; }
-
-.modal-actions { display: flex; justify-content: flex-end; gap: 1rem; }
-.btn-cancel { background: #f1f5f9; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-.btn-save { background: #0ea5e9; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-
-/* NUEVOS ESTILOS */
-.btn-sync {
-  background: #0f172a;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.2s;
-}
-.btn-sync:hover { background: #334155; transform: translateY(-2px); }
-.btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-sync svg { width: 18px; }
-
-.puestos-selector {
-  max-height: 200px;
-  overflow-y: auto;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.5rem;
-}
-.puestos-selector-header {
-  display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr;
-  align-items: center;
-  padding: 0.5rem;
-  font-weight: 800;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  color: #475569;
-  border-bottom: 1.5px solid #cbd5e1;
-}
-
-.puesto-col-name {
-  text-align: left;
-}
-
-.puesto-col-perm {
-  text-align: center;
-}
-
-.puesto-option-row {
-  display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr;
-  align-items: center;
-  padding: 0.5rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.puesto-option-row:last-child {
-  border-bottom: none;
-}
-
-.puesto-label {
-  font-size: 0.85rem;
-  color: #1e293b;
-  text-align: left;
-}
-
-.puesto-checkbox {
-  display: flex;
-  justify-content: center;
-}
-
-.puesto-checkbox input {
-  width: auto;
-  cursor: pointer;
-  height: 16px;
-  width: 16px;
-}
-
-.helper-text { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
-
-.spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 500px; /* Un poco más ancho para el selector */
-  padding: 2rem;
-}
-
-.puestos-search-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-.puesto-search-input {
-  width: 100% !important;
-  padding: 0.5rem 0.75rem !important;
-  border-radius: 6px !important;
-  border: 1px solid #cbd5e1 !important;
-  font-size: 0.85rem !important;
-  outline: none;
-}
-.puesto-search-input:focus {
-  border-color: #0ea5e9 !important;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
-}
-.puesto-actions-buttons {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-.btn-mini-action {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-mini-action:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-</style>
