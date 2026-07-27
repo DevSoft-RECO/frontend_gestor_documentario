@@ -1,44 +1,63 @@
 <template>
   <div class="p-6 md:p-8 space-y-8 font-['Plus_Jakarta_Sans']">
-    <!-- HEADER -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-          Dashboard Analítico
-        </h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Resumen ejecutivo del Gestor Documental — <span class="font-bold text-sky-600 dark:text-sky-400">{{ fechaActual }}</span>
-        </p>
+    <!-- HEADER & KPI GRID COMBINED -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <!-- HEADER PART -->
+      <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 dark:bg-teal-500/10 flex items-center justify-center border border-indigo-600/20 dark:border-teal-500/20 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-600 dark:text-teal-400">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+              <line x1="15" y1="3" x2="15" y2="21"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="3" y1="15" x2="21" y2="15"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Dashboard Analítico
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+              <span>Resumen ejecutivo del Gestor Documental HUM</span>
+              <span class="text-slate-300 dark:text-slate-700 font-normal">|</span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-teal-500/10 text-indigo-600 dark:text-teal-400 border border-indigo-100 dark:border-teal-500/20">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                {{ fechaActual }}
+              </span>
+            </p>
+          </div>
+        </div>
+        <button @click="fetchStats" :disabled="loading"
+                class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-teal-600 dark:hover:bg-teal-700 text-white text-xs font-black transition-all shadow-lg shadow-indigo-600/20 dark:shadow-teal-600/10 disabled:opacity-50 flex items-center gap-2 border-0 cursor-pointer">
+          <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          <span>Actualizar</span>
+        </button>
       </div>
-      <button @click="fetchStats" :disabled="loading"
-              class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black transition-all shadow-lg shadow-sky-600/20 disabled:opacity-50 flex items-center gap-2">
-        <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-        <span>Actualizar</span>
-      </button>
+
+      <!-- KPI GRID -->
+      <div v-if="stats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 bg-slate-50/20 dark:bg-slate-900/30">
+        <div v-for="(kpi, i) in kpis" :key="i"
+             class="kpi-grid-item hover:bg-slate-100/30 dark:hover:bg-slate-800/40 p-6 transition-all cursor-default flex flex-col justify-center min-h-[110px]">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-inner shrink-0" :class="kpi.iconBg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+            </div>
+            <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ kpi.label }}</span>
+          </div>
+          <p class="text-2xl font-black tracking-tight mt-3" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- LOADING STATE -->
     <div v-if="loading && !stats" class="flex flex-col items-center justify-center py-32 gap-4">
-      <div class="w-14 h-14 border-4 border-sky-500/20 border-t-sky-500 rounded-full animate-spin"></div>
+      <div class="w-14 h-14 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin"></div>
       <p class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Cargando analíticas...</p>
     </div>
 
     <template v-if="stats">
-      <!-- KPI CARDS -->
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div v-for="(kpi, i) in kpis" :key="i"
-             class="group relative overflow-hidden rounded-2xl border p-5 transition-all hover:scale-[1.02] hover:shadow-xl cursor-default"
-             :class="kpi.border">
-          <div class="absolute top-0 right-0 w-20 h-20 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity" :class="kpi.glow"></div>
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-inner" :class="kpi.iconBg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
-          </div>
-          <p class="text-2xl font-black tracking-tight" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
-          <p class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">{{ kpi.label }}</p>
-        </div>
-      </div>
-
       <!-- CHARTS ROW -->
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <!-- BAR CHART: Documentos por Mes -->
@@ -92,7 +111,7 @@
           <div class="divide-y divide-slate-100 dark:divide-slate-800">
             <div v-for="(item, i) in stats.actividad_reciente" :key="i"
                  class="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-sky-600 dark:text-sky-400 text-xs font-black shrink-0">
+              <div class="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 text-xs font-black shrink-0">
                 {{ item.usuario_nombre?.charAt(0) || '?' }}
               </div>
               <div class="flex-1 min-w-0">
@@ -150,10 +169,11 @@
         </div>
       </div>
 
-      <!-- SEPARATOR FOR MANUALS SECTION -->
-      <div class="pt-6 border-t border-slate-200 dark:border-slate-800">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center">
+      <!-- MANUALS HEADER & KPI GRID COMBINED -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-8">
+        <!-- MANUALS HEADER PART -->
+        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center border border-violet-600/20 shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-violet-600 dark:text-violet-400">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -168,19 +188,19 @@
             </p>
           </div>
         </div>
-      </div>
 
-      <!-- MANUALS KPI CARDS -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div v-for="(kpi, i) in manualKpis" :key="i"
-             class="group relative overflow-hidden rounded-2xl border p-5 transition-all hover:scale-[1.02] hover:shadow-xl cursor-default"
-             :class="kpi.border">
-          <div class="absolute top-0 right-0 w-20 h-20 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity" :class="kpi.glow"></div>
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-inner" :class="kpi.iconBg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+        <!-- MANUALS KPI GRID -->
+        <div class="grid grid-cols-2 md:grid-cols-4 bg-slate-50/20 dark:bg-slate-900/30">
+          <div v-for="(kpi, i) in manualKpis" :key="i"
+               class="manual-grid-item hover:bg-slate-100/30 dark:hover:bg-slate-800/40 p-6 transition-all cursor-default flex flex-col justify-center min-h-[110px]">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-inner shrink-0" :class="kpi.iconBg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+              </div>
+              <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ kpi.label }}</span>
+            </div>
+            <p class="text-2xl font-black tracking-tight mt-3" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
           </div>
-          <p class="text-2xl font-black tracking-tight" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
-          <p class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">{{ kpi.label }}</p>
         </div>
       </div>
 
@@ -235,7 +255,7 @@
               <div class="flex-1 min-w-0">
                 <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.titulo }}</p>
                 <p class="text-[0.6rem] text-slate-400 mt-0.5">
-                  Subido por <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.usuario_nombre }}</span> · Subcategoría: <span class="font-semibold text-sky-600 dark:text-sky-400">{{ item.subcategoria }}</span>
+                  Subido por <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.usuario_nombre }}</span> · Subcategoría: <span class="font-semibold text-indigo-600 dark:text-teal-400">{{ item.subcategoria }}</span>
                 </p>
               </div>
               <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_creacion) }}</span>
@@ -286,8 +306,8 @@ let barChart: Chart | null = null
 let donutChart: Chart | null = null
 
 const donutColors = [
-  '#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
-  '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'
+  '#6366f1', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
+  '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#0ea5e9'
 ]
 
 const fechaActual = computed(() => {
@@ -301,11 +321,11 @@ const kpis = computed(() => {
       label: 'Asociados',
       value: stats.value.total_asociados,
       icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
-      iconBg: 'bg-sky-50 dark:bg-sky-900/20',
-      iconColor: 'text-sky-600 dark:text-sky-400',
-      valueColor: 'text-sky-700 dark:text-sky-300',
+      iconBg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      valueColor: 'text-indigo-700 dark:text-indigo-300',
       border: 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
-      glow: 'bg-sky-500'
+      glow: 'bg-indigo-500'
     },
     {
       label: 'Documentos',
@@ -447,8 +467,8 @@ const renderBarChart = () => {
       datasets: [{
         label: 'Documentos',
         data: data.map(d => d.total),
-        backgroundColor: isDark ? 'rgba(14, 165, 233, 0.6)' : 'rgba(14, 165, 233, 0.8)',
-        borderColor: '#0ea5e9',
+        backgroundColor: isDark ? '#00ff87' : '#4f46e5', /* Verde neón en oscuro, Índigo en claro */
+        borderColor: isDark ? '#00ff87' : '#4f46e5',
         borderWidth: 1,
         borderRadius: 8,
         borderSkipped: false
@@ -536,3 +556,66 @@ onMounted(() => {
   fetchStats()
 })
 </script>
+
+<style scoped>
+.kpi-grid-item {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
+}
+:global(.dark) .kpi-grid-item {
+  border-color: rgba(30, 41, 59, 0.6);
+}
+
+.manual-grid-item {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
+}
+:global(.dark) .manual-grid-item {
+  border-color: rgba(30, 41, 59, 0.6);
+}
+
+@media (min-width: 1280px) {
+  .kpi-grid-item:nth-child(6n) {
+    border-right: none;
+  }
+  .kpi-grid-item:nth-child(n+7) {
+    border-bottom: none;
+  }
+  .manual-grid-item:nth-child(4n) {
+    border-right: none;
+  }
+  .manual-grid-item:nth-child(n+5) {
+    border-bottom: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .kpi-grid-item:nth-child(3n) {
+    border-right: none;
+  }
+  .kpi-grid-item:nth-child(n+4) {
+    border-bottom: none;
+  }
+  .manual-grid-item:nth-child(4n) {
+    border-right: none;
+  }
+  .manual-grid-item:nth-child(n+5) {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .kpi-grid-item:nth-child(2n) {
+    border-right: none;
+  }
+  .kpi-grid-item:nth-child(n+5) {
+    border-bottom: none;
+  }
+  .manual-grid-item:nth-child(2n) {
+    border-right: none;
+  }
+  .manual-grid-item:nth-child(n+3) {
+    border-bottom: none;
+  }
+}
+</style>

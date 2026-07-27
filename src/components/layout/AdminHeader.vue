@@ -35,7 +35,7 @@
           {{ currentRouteTitle }}
         </h1>
         <span class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest">
-          Sistema Centralizado
+          Gestor Documental HUM
         </span>
       </div>
     </div>
