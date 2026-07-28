@@ -15,8 +15,8 @@ const authStore = useAuthStore()
 
 const canCreatePortfolio = computed(() => {
   const isSuperAdmin = authStore.user?.roles?.includes('Super Admin')
-  const hasPermission = authStore.user?.permissions?.includes('crear_portafolios') || 
-                        authStore.user?.permisos?.includes('crear_portafolios')
+  const hasPermission = authStore.user?.permissions?.includes('crear_gavetas') || 
+                        authStore.user?.permisos?.includes('crear_gavetas')
   return isSuperAdmin || hasPermission
 })
 
