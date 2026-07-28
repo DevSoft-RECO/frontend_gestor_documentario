@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <link rel="icon" href="/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal YK- HUM</title>
   <script>
     // PRE-BOOT THEME DETECTION: Prevents white flash during loading
     (function () {
@@ -31,9 +32,10 @@
       --ring-border: rgba(2, 132, 199, 0.2);
       --ring-dot: #0284c7;
       --svg-glow: rgba(2, 132, 199, 0.25);
-      
+
       --grad-start: #0284c7;
-      --grad-end: #10b981; /* Verde esmeralda vivo */
+      --grad-end: #10b981;
+      /* Verde esmeralda vivo */
       --laser-color: #10b981;
     }
 
@@ -42,7 +44,8 @@
       --bg-gradient: radial-gradient(circle at center, #070d1e 0%, #02040a 100%);
       --text-color: #ffffff;
       --text-shadow: rgba(0, 242, 254, 0.3);
-      --subtitle-color: #00ff87; /* Verde neón muy vivo */
+      --subtitle-color: #00ff87;
+      /* Verde neón muy vivo */
       --subtag-color: #94a3b8;
       --paper-fill: rgba(10, 25, 47, 0.55);
       --badge-border: rgba(0, 255, 135, 0.4);
@@ -50,14 +53,20 @@
       --badge-color: #00ff87;
       --badge-shadow: rgba(0, 255, 135, 0.15);
       --ring-border: rgba(0, 242, 254, 0.2);
-      --ring-dot: #39ff14; /* Verde láser puro */
+      --ring-dot: #39ff14;
+      /* Verde láser puro */
       --svg-glow: rgba(0, 242, 254, 0.4);
-      
-      --grad-start: #00f2fe; /* Cian eléctrico */
-      --grad-end: #00ff87;   /* Verde neón */
-      --laser-color: #39ff14; /* Verde láser */
+
+      --grad-start: #00f2fe;
+      /* Cian eléctrico */
+      --grad-end: #00ff87;
+      /* Verde neón */
+      --laser-color: #39ff14;
+      /* Verde láser */
     }
-    html, body {
+
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100%;
@@ -120,15 +129,27 @@
       animation: pulse-line 2.5s infinite ease-in-out;
       transform-origin: left;
     }
-    .doc-line.delayed-1 { animation-delay: 0.4s; }
-    .doc-line.delayed-2 { animation-delay: 0.8s; }
-    .doc-line.delayed-3 { animation-delay: 1.2s; }
+
+    .doc-line.delayed-1 {
+      animation-delay: 0.4s;
+    }
+
+    .doc-line.delayed-2 {
+      animation-delay: 0.8s;
+    }
+
+    .doc-line.delayed-3 {
+      animation-delay: 1.2s;
+    }
 
     @keyframes pulse-line {
-      0%, 100% {
+
+      0%,
+      100% {
         opacity: 0.3;
         transform: scaleX(0.95);
       }
+
       50% {
         opacity: 1;
         transform: scaleX(1);
@@ -141,10 +162,13 @@
     }
 
     @keyframes scan-translation {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: translateY(0px);
         opacity: 0.2;
       }
+
       50% {
         transform: translateY(75px);
         opacity: 1;
@@ -176,8 +200,13 @@
     }
 
     @keyframes rotate-ring {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     /* --- TEXTO Y LOGOTIPO --- */
@@ -194,7 +223,8 @@
       font-weight: 900;
       font-size: 2.2rem;
       letter-spacing: 8px;
-      text-indent: 8px; /* Corrige centrado del letter-spacing */
+      text-indent: 8px;
+      /* Corrige centrado del letter-spacing */
       color: var(--text-color);
       line-height: 1.1;
       text-transform: uppercase;
@@ -240,10 +270,13 @@
     }
 
     @keyframes breathe {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: scale(1);
         opacity: 0.95;
       }
+
       50% {
         transform: scale(1.02);
         opacity: 1;
@@ -261,24 +294,24 @@
         <svg class="doc-svg" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- Document Body -->
           <rect class="doc-paper" x="15" y="15" width="70" height="90" rx="6" />
-          
+
           <!-- Folded Corner -->
           <path d="M65 15 L85 35 L65 35 Z" fill="url(#foldGrad)" />
           <path d="M65 35 L85 35 L65 15 Z" stroke="url(#docBorderGrad)" stroke-width="1.5" fill="none" />
-          
+
           <!-- Mock text lines (inside the document) -->
           <rect class="doc-line" x="27" y="42" width="46" height="4" rx="2" fill="url(#lineGrad)" />
           <rect class="doc-line delayed-1" x="27" y="54" width="36" height="4" rx="2" fill="url(#lineGrad)" />
           <rect class="doc-line delayed-2" x="27" y="66" width="42" height="4" rx="2" fill="url(#lineGrad)" />
           <rect class="doc-line delayed-3" x="27" y="78" width="28" height="4" rx="2" fill="url(#lineGrad)" />
-          
+
           <!-- Holographic scanner laser line -->
           <g class="scan-laser">
             <line x1="10" y1="25" x2="90" y2="25" stroke="url(#laserGrad)" stroke-width="2.5" />
             <!-- Soft glow under the laser -->
             <rect x="10" y="24" width="80" height="2" fill="url(#laserGlowGrad)" opacity="0.5" />
           </g>
-          
+
           <!-- Definitions of Gradients -->
           <defs>
             <linearGradient id="docBorderGrad" x1="0" y1="0" x2="1" y2="1">
@@ -306,7 +339,7 @@
             </linearGradient>
           </defs>
         </svg>
-        
+
         <!-- Dashed Outer Data Ring -->
         <div class="glow-ring"></div>
       </div>
@@ -315,7 +348,7 @@
       <div class="brand-content">
         <div class="system-title">HUM</div>
         <div class="system-subtitle">Gestor Documental</div>
-        
+
         <div class="brand-group">
           <span>Yaman</span>
           <span class="brand-separator">•</span>
