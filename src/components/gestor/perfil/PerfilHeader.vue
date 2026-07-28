@@ -144,9 +144,9 @@ const updateAsociado = async () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </div>
             </button>
-            <button @click="emit('openTrash')" class="btn-archive-trash" title="Papelera del Asociado">
+            <button @click="emit('openTrash')" class="btn-archive-trash" title="Buzón de Depósito / Papelera">
               <div class="btn-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
               </div>
             </button>
           </div>
@@ -702,8 +702,8 @@ const updateAsociado = async () => {
 
 .btn-archive-trash {
   background: white;
-  color: #ef4444;
-  border: 1px solid #fee2e2;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -715,9 +715,9 @@ const updateAsociado = async () => {
   box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 .btn-archive-trash:hover {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #f87171;
+  background: #f1f5f9;
+  color: #0ea5e9;
+  border-color: #cbd5e1;
 }
 .btn-archive-trash .btn-icon {
   display: flex;
@@ -782,13 +782,13 @@ const updateAsociado = async () => {
 
 :root.dark .btn-archive-trash {
   background: #1e293b;
-  color: #f87171;
+  color: #94a3b8;
   border-color: #334155;
 }
 :root.dark .btn-archive-trash:hover {
-  background: rgba(185, 28, 28, 0.2);
+  background: #334155;
   color: white;
-  border-color: #ef4444;
+  border-color: #0ea5e9;
 }
 :root.dark .modal-header { border-color: #1e293b; }
 :root.dark .modal-header h2 { color: #f8fafc; }
