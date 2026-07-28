@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import Swal from 'sweetalert2'
 import AsignarBuzonModal from '@/components/gestor/papelera/AsignarBuzonModal.vue'
+import VisorPapeleraView from '@/components/gestor/perfil/VisorPapeleraView.vue'
 
 interface Usuario {
   id: number
@@ -53,58 +54,43 @@ const isLoading = ref(false)
 const showAssignModal = ref(false)
 const selectedDoc = ref<DocumentoEliminado | null>(null)
 
+const showTrashViewer = ref(false)
+const selectedTrashDocument = ref<any>(null)
+
+const handleOpenViewerTrash = (doc: DocumentoEliminado) => {
+  selectedTrashDocument.value = {
+    id: doc.id,
+    nombre_subcategoria: doc.nombre_subcategoria,
+    nombre_asociado: doc.nombre_asociado
+  }
+  showTrashViewer.value = true
+}
+
 const searchAsociadoQuery = ref('')
 const filterDateQuery = ref('')
 
-const filteredDocsGeneral = computed(() => {
-  let list = docsGeneral.value
-  
-  if (searchAsociadoQuery.value.trim() !== '') {
-    const q = searchAsociadoQuery.value.toLowerCase().trim()
-    list = list.filter(doc => doc.nombre_asociado.toLowerCase().includes(q))
-  }
-  
-  if (filterDateQuery.value !== '') {
-    const targetDate = filterDateQuery.value
-    list = list.filter(doc => {
-      if (!doc.fecha_eliminacion) return false
-      const docDate = doc.fecha_eliminacion.split('T')[0]
-      return docDate === targetDate
-    })
-  }
-  
-  return list
-})
+const pageGeneral = ref(1)
+const pageBuzon = ref(1)
+const totalPagesGeneral = ref(1)
+const totalPagesBuzon = ref(1)
+const totalGeneral = ref(0)
+const totalBuzon = ref(0)
 
-const filteredDocsBuzon = computed(() => {
-  let list = docsBuzon.value
-  
-  if (searchAsociadoQuery.value.trim() !== '') {
-    const q = searchAsociadoQuery.value.toLowerCase().trim()
-    list = list.filter(doc => doc.nombre_asociado.toLowerCase().includes(q))
-  }
-  
-  if (filterDateQuery.value !== '') {
-    const targetDate = filterDateQuery.value
-    list = list.filter(doc => {
-      if (!doc.fecha_eliminacion) return false
-      const docDate = doc.fecha_eliminacion.split('T')[0]
-      return docDate === targetDate
-    })
-  }
-  
-  return list
-})
+const filteredDocsGeneral = computed(() => docsGeneral.value)
+const filteredDocsBuzon = computed(() => docsBuzon.value)
 
 const fetchBuzon = async () => {
   isLoading.value = true
   try {
     const token = sessionStorage.getItem('access_token')
-    const res = await fetch(`${API_URL}/api/gestor/papelera/mi-buzon`, {
+    const res = await fetch(`${API_URL}/api/gestor/papelera/mi-buzon?page=${pageBuzon.value}&limit=15&search=${searchAsociadoQuery.value}&fecha=${filterDateQuery.value}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     if (res.ok) {
-      docsBuzon.value = await res.json()
+      const data = await res.json()
+      docsBuzon.value = data.data
+      totalPagesBuzon.value = data.pages
+      totalBuzon.value = data.total
     }
   } catch (error) {
     console.error('Error al cargar buzón personal:', error)
@@ -118,11 +104,14 @@ const fetchGeneral = async () => {
   isLoading.value = true
   try {
     const token = sessionStorage.getItem('access_token')
-    const res = await fetch(`${API_URL}/api/gestor/papelera/general`, {
+    const res = await fetch(`${API_URL}/api/gestor/papelera/general?page=${pageGeneral.value}&limit=15&search=${searchAsociadoQuery.value}&fecha=${filterDateQuery.value}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     if (res.ok) {
-      docsGeneral.value = await res.json()
+      const data = await res.json()
+      docsGeneral.value = data.data
+      totalPagesGeneral.value = data.pages
+      totalGeneral.value = data.total
     }
   } catch (error) {
     console.error('Error al cargar papelera general:', error)
@@ -130,6 +119,31 @@ const fetchGeneral = async () => {
     isLoading.value = false
   }
 }
+
+const changePageGeneral = (p: number) => {
+  if (p >= 1 && p <= totalPagesGeneral.value) {
+    pageGeneral.value = p
+    fetchGeneral()
+  }
+}
+
+const changePageBuzon = (p: number) => {
+  if (p >= 1 && p <= totalPagesBuzon.value) {
+    pageBuzon.value = p
+    fetchBuzon()
+  }
+}
+
+// Watch inputs to trigger server-side filtering
+watch([searchAsociadoQuery, filterDateQuery], () => {
+  pageGeneral.value = 1
+  pageBuzon.value = 1
+  if (activeTab.value === 'general') {
+    fetchGeneral()
+  } else {
+    fetchBuzon()
+  }
+})
 
 const fetchUsuarios = async () => {
   if (!isAdmins.value) return
@@ -163,13 +177,10 @@ onMounted(() => {
 
 const handleTabChange = (tab: 'buzon' | 'general') => {
   activeTab.value = tab
+  pageGeneral.value = 1
+  pageBuzon.value = 1
   searchAsociadoQuery.value = ''
   filterDateQuery.value = ''
-  if (tab === 'buzon') {
-    fetchBuzon()
-  } else {
-    fetchGeneral()
-  }
 }
 
 const formatDate = (dateStr?: string) => {
@@ -401,6 +412,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
         <table class="w-full border-collapse text-left">
           <thead>
             <tr>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">ID de Archivo</th>
               <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Asociado</th>
               <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Portafolio / Subcategoría</th>
               <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Págs</th>
@@ -413,12 +425,13 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="8" class="text-center py-8 text-slate-400">Cargando elementos...</td>
+              <td colspan="9" class="text-center py-8 text-slate-400">Cargando elementos...</td>
             </tr>
             <tr v-else-if="filteredDocsGeneral.length === 0">
-              <td colspan="8" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
+              <td colspan="9" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
             </tr>
             <tr v-for="doc in filteredDocsGeneral" :key="doc.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <td class="px-3.5 py-2.5 text-[0.78rem] font-mono font-bold text-slate-500 border-b border-slate-100 dark:border-slate-800/60">#{{ doc.id }}</td>
               <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60">{{ doc.nombre_asociado }}</td>
               <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60">
                 <div class="flex flex-col">
@@ -448,8 +461,8 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
                   <button @click="openAssign(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/10" title="Asignar a Buzón de Usuario">
                     🔑 Asignar
                   </button>
-                  <button @click="handleDownload(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/10" title="Descargar PDF">
-                    📥 Descargar
+                  <button @click="handleOpenViewerTrash(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/10" title="Ver PDF">
+                    👁️ Ver
                   </button>
                   <button @click="handleDeletePermanent(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-rose-500 hover:bg-rose-600 text-white shadow-sm shadow-rose-500/10" title="Eliminar Permanentemente">
                     🗑️ Depurar
@@ -459,6 +472,39 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Control de paginación General -->
+      <div v-if="totalPagesGeneral > 1" class="mt-4 flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div class="flex flex-1 justify-between sm:hidden">
+          <button @click="changePageGeneral(pageGeneral - 1)" :disabled="pageGeneral <= 1" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-50">Anterior</button>
+          <button @click="changePageGeneral(pageGeneral + 1)" :disabled="pageGeneral >= totalPagesGeneral" class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-50">Siguiente</button>
+        </div>
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs text-slate-700 dark:text-slate-300">
+              Mostrando <span class="font-extrabold">{{ (pageGeneral - 1) * 15 + 1 }}</span> a <span class="font-extrabold">{{ Math.min(pageGeneral * 15, totalGeneral) }}</span> de <span class="font-extrabold">{{ totalGeneral }}</span> resultados
+            </p>
+          </div>
+          <div>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+              <button @click="changePageGeneral(pageGeneral - 1)" :disabled="pageGeneral <= 1" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+              </button>
+              <button 
+                v-for="p in totalPagesGeneral" 
+                :key="p" 
+                @click="changePageGeneral(p)"
+                :class="[p === pageGeneral ? 'bg-sky-500 text-white font-extrabold' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800', 'relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition duration-200 cursor-pointer']"
+              >
+                {{ p }}
+              </button>
+              <button @click="changePageGeneral(pageGeneral + 1)" :disabled="pageGeneral >= totalPagesGeneral" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+              </button>
+            </nav>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -501,6 +547,7 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
         <table class="w-full border-collapse text-left">
           <thead>
             <tr>
+              <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">ID de Archivo</th>
               <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Asociado</th>
               <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Portafolio / Subcategoría</th>
               <th class="bg-slate-100/80 dark:bg-slate-950/50 px-3.5 py-2.5 text-[0.68rem] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider border-b-2 border-slate-200 dark:border-slate-800">Páginas</th>
@@ -511,12 +558,13 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="6" class="text-center py-8 text-slate-400">Cargando elementos...</td>
+              <td colspan="7" class="text-center py-8 text-slate-400">Cargando elementos...</td>
             </tr>
             <tr v-else-if="filteredDocsBuzon.length === 0">
-              <td colspan="6" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
+              <td colspan="7" class="text-center py-8 text-slate-400">No hay documentos que coincidan con los filtros.</td>
             </tr>
             <tr v-for="doc in filteredDocsBuzon" :key="doc.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <td class="px-3.5 py-2.5 text-[0.78rem] font-mono font-bold text-slate-500 border-b border-slate-100 dark:border-slate-800/60">#{{ doc.id }}</td>
               <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60">{{ doc.nombre_asociado }}</td>
               <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60">
                 <div class="flex flex-col">
@@ -536,6 +584,39 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
           </tbody>
         </table>
       </div>
+
+      <!-- Control de paginación Buzón -->
+      <div v-if="totalPagesBuzon > 1" class="mt-4 flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div class="flex flex-1 justify-between sm:hidden">
+          <button @click="changePageBuzon(pageBuzon - 1)" :disabled="pageBuzon <= 1" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-50">Anterior</button>
+          <button @click="changePageBuzon(pageBuzon + 1)" :disabled="pageBuzon >= totalPagesBuzon" class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-50">Siguiente</button>
+        </div>
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs text-slate-700 dark:text-slate-300">
+              Mostrando <span class="font-extrabold">{{ (pageBuzon - 1) * 15 + 1 }}</span> a <span class="font-extrabold">{{ Math.min(pageBuzon * 15, totalBuzon) }}</span> de <span class="font-extrabold">{{ totalBuzon }}</span> resultados
+            </p>
+          </div>
+          <div>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+              <button @click="changePageBuzon(pageBuzon - 1)" :disabled="pageBuzon <= 1" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+              </button>
+              <button 
+                v-for="p in totalPagesBuzon" 
+                :key="p" 
+                @click="changePageBuzon(p)"
+                :class="[p === pageBuzon ? 'bg-sky-500 text-white font-extrabold' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800', 'relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition duration-200 cursor-pointer']"
+              >
+                {{ p }}
+              </button>
+              <button @click="changePageBuzon(pageBuzon + 1)" :disabled="pageBuzon >= totalPagesBuzon" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL DE ASIGNACIÓN -->
@@ -546,6 +627,15 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
       :usuarios="usuarios"
       @close="showAssignModal = false"
       @assign="handleAssign"
+    />
+
+    <!-- VISOR DE PAPELERA RESTRINGIDO -->
+    <VisorPapeleraView 
+      v-if="showTrashViewer && selectedTrashDocument"
+      :show="showTrashViewer"
+      :documento="selectedTrashDocument"
+      :asociadoNombre="selectedTrashDocument.nombre_asociado || 'Expediente'"
+      @close="showTrashViewer = false"
     />
   </div>
 </template>
