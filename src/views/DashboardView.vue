@@ -589,15 +589,30 @@ const renderDonutChart = () => {
   const isDark = document.documentElement.classList.contains('dark')
   const data = stats.value.documentos_por_categoria || []
 
+  // Calcular suma total real
+  const totalSum = data.reduce((sum, item) => sum + Number(item.total), 0)
+  
+  // Establecer un valor mínimo de dibujo equivalente al 1.5% del total para que porciones pequeñas sean visibles
+  const minDrawValue = totalSum * 0.015
+
+  // Mapear los datos para el dibujo
+  const chartDataValues = data.map(d => {
+    const val = Number(d.total)
+    if (val > 0 && val < minDrawValue) {
+      return minDrawValue
+    }
+    return val
+  })
+
   donutChart = new Chart(donutChartCanvas.value, {
     type: 'doughnut',
     data: {
       labels: data.map(d => d.nombre),
       datasets: [{
-        data: data.map(d => Number(d.total)),
+        data: chartDataValues,
         backgroundColor: data.map((_, i) => donutColors[i % donutColors.length]),
         borderColor: isDark ? '#0f172a' : '#ffffff',
-        borderWidth: 3,
+        borderWidth: 1.5,
         hoverOffset: 8
       }]
     },
@@ -612,7 +627,14 @@ const renderDonutChart = () => {
           titleFont: { weight: 'bold', size: 11 },
           bodyFont: { size: 11 },
           padding: 10,
-          cornerRadius: 8
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex
+              const realValue = data[index].total
+              return ` ${context.label}: ${realValue} docs`
+            }
+          }
         }
       }
     }
