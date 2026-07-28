@@ -181,6 +181,11 @@ const handleTabChange = (tab: 'buzon' | 'general') => {
   pageBuzon.value = 1
   searchAsociadoQuery.value = ''
   filterDateQuery.value = ''
+  if (tab === 'buzon') {
+    fetchBuzon()
+  } else {
+    fetchGeneral()
+  }
 }
 
 const formatDate = (dateStr?: string) => {
