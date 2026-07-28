@@ -594,8 +594,8 @@ const renderDonutChart = () => {
     data: {
       labels: data.map(d => d.nombre),
       datasets: [{
-        data: data.map(d => d.total),
-        backgroundColor: donutColors.slice(0, data.length),
+        data: data.map(d => Number(d.total)),
+        backgroundColor: data.map((_, i) => donutColors[i % donutColors.length]),
         borderColor: isDark ? '#0f172a' : '#ffffff',
         borderWidth: 3,
         hoverOffset: 8
