@@ -9,6 +9,8 @@ import PerfilHeader from '@/components/gestor/perfil/PerfilHeader.vue'
 import ExpedienteGrid from '@/components/gestor/perfil/ExpedienteGrid.vue'
 import UploadDocumentModal from '@/components/gestor/perfil/UploadDocumentModal.vue'
 import DocumentViewer from '@/components/gestor/perfil/DocumentViewer.vue'
+import PapeleraAsociadoView from '@/components/gestor/perfil/PapeleraAsociadoView.vue'
+import VisorPapeleraView from '@/components/gestor/perfil/VisorPapeleraView.vue'
 
 interface Asociado {
   id: number
@@ -61,10 +63,14 @@ const asociado = ref<Asociado | null>(null)
 const expedientesBrutos = ref<Documento[]>([])
 const categoriasMaster = ref<CategoriaMaster[]>([])
 const actividades = ref<ActividadItem[]>([])
+const documentosEliminados = ref<any[]>([])
 const isLoading = ref(true)
 
 const showUploadModal = ref(false)
 const showViewerModal = ref(false)
+const showTrashModal = ref(false)
+const showTrashViewer = ref(false)
+const selectedTrashDocument = ref<any>(null)
 const currentDocument = ref<Documento | null>(null)
 
 // --- Helper Functions ---
@@ -80,11 +86,12 @@ const loadAllData = async () => {
     const token = sessionStorage.getItem('access_token')
     const headers = { 'Authorization': `Bearer ${token}` }
 
-    const [resAsociado, resDocs, resCats, resActividades] = await Promise.all([
+    const [resAsociado, resDocs, resCats, resActividades, resPapelera] = await Promise.all([
       fetch(`${API_URL}/api/gestor/asociados/${asociadoId}`, { headers }),
       fetch(`${API_URL}/api/gestor/asociados/${asociadoId}/expediente`, { headers }),
       fetch(`${API_URL}/api/gestor/categorias`, { headers }),
-      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}/actividad`, { headers })
+      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}/actividad`, { headers }),
+      fetch(`${API_URL}/api/gestor/asociados/${asociadoId}/papelera`, { headers })
     ])
 
     if (!resAsociado.ok) throw new Error('Asociado no encontrado')
@@ -94,6 +101,9 @@ const loadAllData = async () => {
     categoriasMaster.value = await resCats.json()
     if (resActividades.ok) {
       actividades.value = await resActividades.json()
+    }
+    if (resPapelera.ok) {
+      documentosEliminados.value = await resPapelera.json()
     }
   } catch (e) {
     console.error(e)
@@ -144,6 +154,21 @@ const handleUploadSuccess = () => {
 const handleOpenViewer = (doc: Documento) => {
   currentDocument.value = doc
   showViewerModal.value = true
+}
+
+const handleOpenViewerTrash = (doc: any) => {
+  showTrashModal.value = false // Cierra el listado
+  selectedTrashDocument.value = {
+    id: doc.id,
+    nombre_subcategoria: doc.nombre_subcategoria
+  }
+  showTrashViewer.value = true // Abre el visor simplificado
+}
+
+const handleCloseTrashViewer = () => {
+  showTrashViewer.value = false
+  selectedTrashDocument.value = null
+  showTrashModal.value = true // Reabre el listado
 }
 
 const handleDeleteDocument = async (doc: Documento) => {
@@ -253,6 +278,7 @@ onMounted(() => {
         @back="router.push('/gestor/asociados')"
         @addDocument="showUploadModal = true"
         @updateSuccess="loadAllData"
+        @openTrash="showTrashModal = true"
       />
 
       <div class="profile-layout-grid">
@@ -321,6 +347,22 @@ onMounted(() => {
         :documento="currentDocument"
         :asociadoNombre="asociado.nombre_completo"
         @close="showViewerModal = false"
+      />
+
+      <PapeleraAsociadoView 
+        :show="showTrashModal"
+        :documentosEliminados="documentosEliminados"
+        :asociadoNombre="asociado.nombre_completo"
+        @close="showTrashModal = false"
+        @preview="handleOpenViewerTrash"
+      />
+
+      <VisorPapeleraView 
+        v-if="showTrashViewer && selectedTrashDocument"
+        :show="showTrashViewer"
+        :documento="selectedTrashDocument"
+        :asociadoNombre="asociado.nombre_completo"
+        @close="handleCloseTrashViewer"
       />
     </div>
   </div>

@@ -19,7 +19,7 @@ const props = defineProps<{
   canCreateFolder: boolean
 }>()
 
-const emit = defineEmits(['back', 'addDocument', 'updateSuccess'])
+const emit = defineEmits(['back', 'addDocument', 'updateSuccess', 'openTrash'])
 
 const authStore = useAuthStore()
 
@@ -138,11 +138,18 @@ const updateAsociado = async () => {
 
         <!-- Acciones del Archivador -->
         <div class="header-actions">
-          <button v-if="canEdit" @click="openEditModal" class="btn-archive-edit" title="Editar Perfil">
-            <div class="btn-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            </div>
-          </button>
+          <div class="flex gap-2">
+            <button v-if="canEdit" @click="openEditModal" class="btn-archive-edit" title="Editar Perfil">
+              <div class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </div>
+            </button>
+            <button @click="emit('openTrash')" class="btn-archive-trash" title="Papelera del Asociado">
+              <div class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </div>
+            </button>
+          </div>
           <button v-if="canCreateFolder" @click="emit('addDocument')" class="btn-archive-insert">
             <div class="btn-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
@@ -693,6 +700,35 @@ const updateAsociado = async () => {
   transform: scale(1.1) rotate(15deg);
 }
 
+.btn-archive-trash {
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.btn-archive-trash:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #f87171;
+}
+.btn-archive-trash .btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+.btn-archive-trash:hover .btn-icon {
+  transform: scale(1.1) rotate(15deg);
+}
+
 .glass-card {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
@@ -742,6 +778,17 @@ const updateAsociado = async () => {
   background: #334155;
   color: white;
   border-color: #0ea5e9;
+}
+
+:root.dark .btn-archive-trash {
+  background: #1e293b;
+  color: #f87171;
+  border-color: #334155;
+}
+:root.dark .btn-archive-trash:hover {
+  background: rgba(185, 28, 28, 0.2);
+  color: white;
+  border-color: #ef4444;
 }
 :root.dark .modal-header { border-color: #1e293b; }
 :root.dark .modal-header h2 { color: #f8fafc; }
