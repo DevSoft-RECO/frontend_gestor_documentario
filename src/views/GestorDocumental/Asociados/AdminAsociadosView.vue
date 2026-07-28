@@ -11,6 +11,7 @@ interface Asociado {
   direccion: string
   fecha_registro: string
   total_documentos: number
+  total_tamano: number
 }
 
 const authStore = useAuthStore()
@@ -23,6 +24,7 @@ const searchQuery = ref('')
 
 const currentPage = ref(1)
 const totalAsociados = ref(0)
+const totalTamanoGlobal = ref(0)
 const itemsPerPage = ref(10)
 
 // Control del Modal de Confirmación
@@ -46,6 +48,7 @@ const loadAsociados = async () => {
       const data = await res.json()
       asociados.value = data.asociados || []
       totalAsociados.value = data.total
+      totalTamanoGlobal.value = data.total_tamano_global || 0
     } else {
       if (res.status === 403) {
         router.push('/unauthorized')
@@ -56,6 +59,14 @@ const loadAsociados = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const formatSize = (bytes: number): string => {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // Filtro por búsqueda del lado del servidor
@@ -135,8 +146,8 @@ onMounted(() => {
             <p class="text-lg font-black mt-0.5 text-indigo-600 dark:text-indigo-400 font-mono">{{ totalAsociados }}</p>
           </div>
           <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 px-5 py-3 rounded-2xl shadow-sm text-center">
-            <p class="text-[0.6rem] font-bold text-slate-400 uppercase tracking-wider">Buscados / Filtrados</p>
-            <p class="text-lg font-black mt-0.5 text-emerald-500 font-mono">{{ totalAsociados }}</p>
+            <p class="text-[0.6rem] font-bold text-slate-400 uppercase tracking-wider">Almacenamiento Total</p>
+            <p class="text-lg font-black mt-0.5 text-emerald-500 font-mono">{{ formatSize(totalTamanoGlobal) }}</p>
           </div>
         </div>
       </div>
@@ -172,20 +183,21 @@ onMounted(() => {
                 <th class="p-4">Nombre Completo</th>
                 <th class="p-4">Dirección</th>
                 <th class="p-4">Documentos Cargados</th>
+                <th class="p-4">Tamaño Total</th>
                 <th class="p-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-150 dark:divide-slate-800">
               <tr v-for="asociado in asociadosFiltrados" :key="asociado.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all">
                 <td class="p-4 font-mono text-slate-500 dark:text-slate-400">
-                  <p class="font-extrabold text-slate-700 dark:text-slate-355">{{ asociado.dpi }}</p>
+                  <p class="font-extrabold text-slate-700 dark:text-slate-300">{{ asociado.dpi }}</p>
                   <p class="text-[0.6rem] text-slate-400">{{ asociado.codigo_cliente || 'N/A' }}</p>
                 </td>
                 <td class="p-4 font-bold text-slate-800 dark:text-slate-100">
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-sm">👤</div>
                     <div>
-                      <p class="font-extrabold text-slate-800 dark:text-slate-100 hover:text-indigo-650 cursor-pointer" @click="router.push(`/admin/gestor/asociados/${asociado.id}`)">
+                      <p class="font-extrabold text-slate-800 dark:text-slate-100 hover:text-indigo-600 cursor-pointer" @click="router.push(`/admin/gestor/asociados/${asociado.id}`)">
                         {{ asociado.nombre_completo }}
                       </p>
                       <p class="text-[0.6rem] text-slate-400 font-normal">Registrado: {{ new Date(asociado.fecha_registro).toLocaleDateString() }}</p>
@@ -208,6 +220,9 @@ onMounted(() => {
                   >
                     📂 {{ asociado.total_documentos }} docs
                   </span>
+                </td>
+                <td class="p-4 font-mono font-bold text-slate-600 dark:text-slate-400">
+                  💾 {{ formatSize(asociado.total_tamano) }}
                 </td>
                 <td class="p-4">
                   <div class="flex items-center justify-center gap-3">
