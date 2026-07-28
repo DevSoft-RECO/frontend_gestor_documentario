@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
+import AuthService from '@/services/AuthService';
 
 // Cliente para la App Hija (Local / Espejo)
 const api = axios.create({
@@ -35,7 +36,7 @@ api.interceptors.response.use(
             sessionStorage.removeItem('access_token');
             sessionStorage.clear();
             // Redirigir al login si falla la sesión
-            import('@/services/AuthService').then(module => module.default.login());
+            AuthService.login();
         }
         return Promise.reject(error);
     }
