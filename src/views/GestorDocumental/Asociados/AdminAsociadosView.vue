@@ -21,6 +21,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const asociados = ref<Asociado[]>([])
 const isLoading = ref(true)
 const searchQuery = ref('')
+const sortOrder = ref('newest')
 
 const currentPage = ref(1)
 const totalAsociados = ref(0)
@@ -41,7 +42,7 @@ const getHeaders = () => {
 const loadAsociados = async () => {
   isLoading.value = true
   try {
-    const res = await fetch(`${API_URL}/api/gestor/admin/asociados?page=${currentPage.value}&limit=${itemsPerPage.value}&search=${encodeURIComponent(searchQuery.value)}`, {
+    const res = await fetch(`${API_URL}/api/gestor/admin/asociados?page=${currentPage.value}&limit=${itemsPerPage.value}&search=${encodeURIComponent(searchQuery.value)}&sort=${sortOrder.value}`, {
       headers: getHeaders()
     })
     if (res.ok) {
@@ -72,8 +73,8 @@ const formatSize = (bytes: number): string => {
 // Filtro por búsqueda del lado del servidor
 const asociadosFiltrados = computed(() => asociados.value || [])
 
-// Recargar al buscar
-watch(searchQuery, () => {
+// Recargar al buscar o cambiar ordenamiento
+watch([searchQuery, sortOrder], () => {
   currentPage.value = 1
   loadAsociados()
 })
@@ -154,14 +155,26 @@ onMounted(() => {
 
       <!-- BARRA DE ACCIÓN Y BÚSQUEDA -->
       <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm">
-        <div class="relative w-full md:max-w-md">
-          <span class="absolute left-3.5 top-3 text-slate-400">🔍</span>
-          <input 
-            type="text" 
-            v-model="searchQuery" 
-            placeholder="Buscar por Nombre, DPI o Código de Cliente..." 
-            class="w-full pl-9 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
-          />
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:max-w-xl">
+          <div class="relative w-full sm:max-w-xs">
+            <span class="absolute left-3.5 top-3 text-slate-400"></span>
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Buscar por Nombre, DPI o Código..." 
+              class="w-full pl-9 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+          <div class="relative w-full sm:w-auto flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-bold whitespace-nowrap">Ordenar por:</span>
+            <select 
+              v-model="sortOrder"
+              class="px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold cursor-pointer"
+            >
+              <option value="newest">Más nuevos primero</option>
+              <option value="size">Mayor tamaño primero</option>
+            </select>
+          </div>
         </div>
         <div class="text-[0.7rem] text-slate-400 italic">
           * Para crear un nuevo asociado, usa la vista de <strong>Buscador de Asociados</strong>.
