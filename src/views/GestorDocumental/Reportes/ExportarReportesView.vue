@@ -76,10 +76,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-
-const authStore = useAuthStore();
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api';
+import api from '@/api/axios';
 
 const isDownloading = ref(false);
 
@@ -90,20 +87,11 @@ const filtros = ref({
 
 const descargarCSV = async (endpoint: string, filename: string) => {
     try {
-        const response = await fetch(`${API_URL}/gestor/exportar/${endpoint}`, {
-            headers: {
-                'Authorization': `Bearer ${authStore.token}`
-            }
+        const response = await api.get(`/gestor/exportar/${endpoint}`, {
+            responseType: 'blob'
         });
 
-        if (!response.ok) {
-            const data = await response.json();
-            alert(`Error: ${data.detail || 'No se pudo descargar el reporte'}`);
-            return;
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+        const url = window.URL.createObjectURL(response.data);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -111,9 +99,9 @@ const descargarCSV = async (endpoint: string, filename: string) => {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error descargando CSV:', error);
-        alert('Ocurrió un error inesperado al intentar descargar el archivo.');
+        alert(`Error: ${error?.response?.data?.detail || 'Ocurrió un error inesperado al intentar descargar el archivo.'}`);
     }
 };
 
