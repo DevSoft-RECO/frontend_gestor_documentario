@@ -102,6 +102,15 @@ const routes: RouteRecordRaw[] = [
                 }
             },
             {
+                path: 'gestor/reportes',
+                name: 'gestor-reportes',
+                component: () => import('@/views/GestorDocumental/Reportes/ExportarReportesView.vue'),
+                meta: {
+                    title: 'Exportar Reportes',
+                    permission: 'reportes_hum'
+                }
+            },
+            {
                 path: 'manuales/biblioteca',
                 name: 'manuales-biblioteca',
                 component: BibliotecaView,
@@ -162,8 +171,10 @@ router.beforeEach(async (to, _from, next) => {
             }
         }
 
+        const isSuperAdmin = authStore.hasRole('Super Admin')
+
         // Verificar permiso
-        if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
+        if (to.meta.permission && !isSuperAdmin && !authStore.hasPermission(to.meta.permission as string)) {
             console.warn(`⛔ Acceso denegado: Falta permiso '${to.meta.permission}'.`)
             return next({ name: 'unauthorized' })
         }
