@@ -158,6 +158,9 @@ const registerAsociado = async () => {
                 </div>
                 <div class="asoc-arrow">→</div>
               </div>
+              <div v-if="canCreatePortfolio" class="dropdown-footer" @click="openRegisterModal">
+                <span class="register-link">¿No coincide? Registrar nuevo asociado</span>
+              </div>
             </div>
           </Transition>
 
@@ -380,6 +383,25 @@ const registerAsociado = async () => {
   color: #94a3b8;
   text-transform: uppercase;
   border-bottom: 1px solid #f8fafc;
+}
+
+.dropdown-footer {
+  padding: 1.25rem 2rem;
+  text-align: center;
+  border-top: 1px solid #f8fafc;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: all 0.3s;
+}
+
+.dropdown-footer:hover {
+  background: #f0f9ff;
+}
+
+.register-link {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0ea5e9;
 }
 
 .dropdown-item {
@@ -609,6 +631,13 @@ const registerAsociado = async () => {
 }
 
 :root.dark .dropdown-header { color: #64748b; border-color: #1e293b; }
+:root.dark .dropdown-footer {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: #1e293b;
+}
+:root.dark .dropdown-footer:hover {
+  background: #1e293b;
+}
 :root.dark .dropdown-item:hover { background: #1e293b; }
 :root.dark .asoc-name { color: #f8fafc; }
 :root.dark .meta-tag { background: #1e293b; color: #94a3b8; }
