@@ -79,6 +79,18 @@ const totalBuzon = ref(0)
 const filteredDocsGeneral = computed(() => docsGeneral.value)
 const filteredDocsBuzon = computed(() => docsBuzon.value)
 
+const getVisiblePages = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+  
+  if (currentPage <= 4) return [1, 2, 3, 4, 5, '...', totalPages]
+  if (currentPage >= totalPages - 3) return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+  
+  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages]
+}
+
+const visiblePagesGeneral = computed(() => getVisiblePages(pageGeneral.value, totalPagesGeneral.value))
+const visiblePagesBuzon = computed(() => getVisiblePages(pageBuzon.value, totalPagesBuzon.value))
+
 const fetchBuzon = async () => {
   isLoading.value = true
   try {
@@ -437,15 +449,15 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
             </tr>
             <tr v-for="doc in filteredDocsGeneral" :key="doc.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
               <td class="px-3.5 py-2.5 text-[0.78rem] font-mono font-bold text-slate-500 border-b border-slate-100 dark:border-slate-800/60">#{{ doc.id }}</td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60">{{ doc.nombre_asociado }}</td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60">
-                <div class="flex flex-col">
-                  <span class="text-[0.62rem] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">{{ doc.nombre_categoria }}</span>
-                  <span class="font-semibold text-sky-600 dark:text-sky-400">{{ doc.nombre_subcategoria }}</span>
+              <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60 max-w-[150px] truncate" :title="doc.nombre_asociado">{{ doc.nombre_asociado }}</td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60 max-w-[160px]">
+                <div class="flex flex-col truncate" :title="`${doc.nombre_categoria} - ${doc.nombre_subcategoria}`">
+                  <span class="text-[0.62rem] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider truncate">{{ doc.nombre_categoria }}</span>
+                  <span class="font-semibold text-sky-600 dark:text-sky-400 truncate">{{ doc.nombre_subcategoria }}</span>
                 </div>
               </td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60"><span class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-1 rounded-md text-[0.68rem] font-bold">{{ doc.total_paginas }} págs</span></td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800/60">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60"><span class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-1 rounded-md text-[0.68rem] font-bold whitespace-nowrap">{{ doc.total_paginas }} págs</span></td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800/60 max-w-[120px] truncate" :title="doc.usuario_elimino?.name || 'Sistema'">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
               <td class="px-3.5 py-2.5 text-xs text-slate-400 font-medium border-b border-slate-100 dark:border-slate-800/60">{{ formatDate(doc.fecha_eliminacion) }}</td>
               <td class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60">
                 <span v-if="doc.descargado" class="bg-emerald-500/10 text-emerald-600 border border-emerald-500/15 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[0.68rem] font-bold inline-block whitespace-nowrap" :title="'Descargado el: ' + formatDate(doc.fecha_descarga)">
@@ -496,14 +508,16 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
               <button @click="changePageGeneral(pageGeneral - 1)" :disabled="pageGeneral <= 1" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
               </button>
-              <button 
-                v-for="p in totalPagesGeneral" 
-                :key="p" 
-                @click="changePageGeneral(p)"
-                :class="[p === pageGeneral ? 'bg-sky-500 text-white font-extrabold' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800', 'relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition duration-200 cursor-pointer']"
-              >
-                {{ p }}
-              </button>
+              <template v-for="(p, index) in visiblePagesGeneral" :key="index">
+                <span v-if="p === '...'" class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold text-slate-400">...</span>
+                <button 
+                  v-else
+                  @click="changePageGeneral(Number(p))"
+                  :class="[p === pageGeneral ? 'bg-sky-500 text-white font-extrabold' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800', 'relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition duration-200 cursor-pointer']"
+                >
+                  {{ p }}
+                </button>
+              </template>
               <button @click="changePageGeneral(pageGeneral + 1)" :disabled="pageGeneral >= totalPagesGeneral" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
               </button>
@@ -570,15 +584,15 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
             </tr>
             <tr v-for="doc in filteredDocsBuzon" :key="doc.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
               <td class="px-3.5 py-2.5 text-[0.78rem] font-mono font-bold text-slate-500 border-b border-slate-100 dark:border-slate-800/60">#{{ doc.id }}</td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60">{{ doc.nombre_asociado }}</td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60">
-                <div class="flex flex-col">
-                  <span class="text-[0.62rem] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">{{ doc.nombre_categoria }}</span>
-                  <span class="font-semibold text-sky-600 dark:text-sky-400">{{ doc.nombre_subcategoria }}</span>
+              <td class="px-3.5 py-2.5 text-[0.78rem] font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800/60 max-w-[150px] truncate" :title="doc.nombre_asociado">{{ doc.nombre_asociado }}</td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60 max-w-[160px]">
+                <div class="flex flex-col truncate" :title="`${doc.nombre_categoria} - ${doc.nombre_subcategoria}`">
+                  <span class="text-[0.62rem] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider truncate">{{ doc.nombre_categoria }}</span>
+                  <span class="font-semibold text-sky-600 dark:text-sky-400 truncate">{{ doc.nombre_subcategoria }}</span>
                 </div>
               </td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60"><span class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-1 rounded-md text-[0.68rem] font-bold">{{ doc.total_paginas }} págs</span></td>
-              <td class="px-3.5 py-2.5 text-[0.78rem] text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800/60">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] border-b border-slate-100 dark:border-slate-800/60"><span class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-1 rounded-md text-[0.68rem] font-bold whitespace-nowrap">{{ doc.total_paginas }} págs</span></td>
+              <td class="px-3.5 py-2.5 text-[0.78rem] text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800/60 max-w-[120px] truncate" :title="doc.usuario_elimino?.name || 'Sistema'">{{ doc.usuario_elimino?.name || 'Sistema' }}</td>
               <td class="px-3.5 py-2.5 text-xs text-slate-400 font-medium border-b border-slate-100 dark:border-slate-800/60">{{ formatDate(doc.fecha_asignacion) }}</td>
               <td class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60">
                 <button @click="handleDownload(doc)" class="text-[0.68rem] font-bold px-2.5 py-1.5 rounded-md cursor-pointer transition duration-200 border-0 bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/10" title="Descargar archivo">
@@ -607,14 +621,16 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
               <button @click="changePageBuzon(pageBuzon - 1)" :disabled="pageBuzon <= 1" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
               </button>
-              <button 
-                v-for="p in totalPagesBuzon" 
-                :key="p" 
-                @click="changePageBuzon(p)"
-                :class="[p === pageBuzon ? 'bg-sky-500 text-white font-extrabold' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800', 'relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition duration-200 cursor-pointer']"
-              >
-                {{ p }}
-              </button>
+              <template v-for="(p, index) in visiblePagesBuzon" :key="index">
+                <span v-if="p === '...'" class="relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold text-slate-400">...</span>
+                <button 
+                  v-else
+                  @click="changePageBuzon(Number(p))"
+                  :class="[p === pageBuzon ? 'bg-sky-500 text-white font-extrabold' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800', 'relative inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition duration-200 cursor-pointer']"
+                >
+                  {{ p }}
+                </button>
+              </template>
               <button @click="changePageBuzon(pageBuzon + 1)" :disabled="pageBuzon >= totalPagesBuzon" class="relative inline-flex items-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 cursor-pointer">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
               </button>
