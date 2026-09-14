@@ -25,14 +25,6 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 {{ fechaActual }}
               </span>
-              <span v-if="gcsSize !== null" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-cyan-300 border border-white/10">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
-                Google Cloud: {{ formatBytes(gcsSize) }}
-              </span>
-              <span v-else class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-cyan-300/60 border border-white/10">
-                <svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
-                Calculando espacio...
-              </span>
             </p>
           </div>
         </div>
@@ -303,11 +295,10 @@ interface Stats {
   manuales_creados_mes: number
   manuales_por_categoria: { nombre: string; total: number }[]
   manuales_recientes: { titulo: string; fecha_creacion: string; usuario_nombre: string; subcategoria: string }[]
-  gcs_size_bytes: number
+  asociados_por_mes: { mes: string; total: number }[]
 }
 
 const stats = ref<Stats | null>(null)
-const gcsSize = ref<number | null>(null)
 const loading = ref(false)
 const barChartCanvas = ref<HTMLCanvasElement | null>(null)
 const donutChartCanvas = ref<HTMLCanvasElement | null>(null)
@@ -444,24 +435,8 @@ const manualKpis = computed(() => {
   ]
 })
 
-const fetchGCSSize = async () => {
-  try {
-    const token = sessionStorage.getItem('access_token')
-    const res = await fetch(`${API_URL}/api/gestor/dashboard/gcs-size`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    if (res.ok) {
-      const data = await res.json()
-      gcsSize.value = data.gcs_size_bytes
-    }
-  } catch (e) {
-    console.error('Error fetching GCS size:', e)
-  }
-}
-
 const fetchStats = async () => {
   loading.value = true
-  gcsSize.value = null
   try {
     const token = sessionStorage.getItem('access_token')
     const res = await fetch(`${API_URL}/api/gestor/dashboard/stats`, {
@@ -471,7 +446,6 @@ const fetchStats = async () => {
       stats.value = await res.json()
       await nextTick()
       renderCharts()
-      fetchGCSSize() // Se ejecuta en segundo plano
     }
   } catch (e) {
     console.error('Error fetching dashboard stats:', e)
@@ -490,27 +464,40 @@ const renderBarChart = () => {
   if (barChart) barChart.destroy()
 
   const isDark = document.documentElement.classList.contains('dark')
-  const data = stats.value.documentos_por_mes || []
-  const totalAsoc = stats.value.total_asociados || 0
+  const dataDocs = stats.value.documentos_por_mes || []
+  const dataAsoc = stats.value.asociados_por_mes || []
 
-  // Proyectar crecimiento de asociados hacia atrás para los 6 meses
-  const asociadosData = data.map((_, index) => {
-    const scaleFactors = [0.65, 0.72, 0.80, 0.87, 0.93, 1.0]
-    const factor = scaleFactors[index % scaleFactors.length]
-    return Math.max(1, Math.round(totalAsoc * factor))
+  // Combinar meses de documentos y asociados
+  const monthSet = new Set<string>()
+  dataDocs.forEach(d => monthSet.add(d.mes))
+  dataAsoc.forEach(d => monthSet.add(d.mes))
+
+  // Ordenar meses cronológicamente
+  const sortedMonths = Array.from(monthSet).sort()
+
+  const labels = sortedMonths.map(mesStr => {
+    const [y, m] = mesStr.split('-')
+    return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('es', { month: 'short' })
+  })
+
+  const docValues = sortedMonths.map(mes => {
+    const found = dataDocs.find(d => d.mes === mes)
+    return found ? found.total : 0
+  })
+
+  const asocValues = sortedMonths.map(mes => {
+    const found = dataAsoc.find(d => d.mes === mes)
+    return found ? found.total : 0
   })
 
   barChart = new Chart(barChartCanvas.value, {
     type: 'line',
     data: {
-      labels: data.map(d => {
-        const [y, m] = d.mes.split('-')
-        return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('es', { month: 'short' })
-      }),
+      labels: labels,
       datasets: [
         {
           label: 'Documentos',
-          data: data.map(d => d.total),
+          data: docValues,
           backgroundColor: isDark ? 'rgba(0, 229, 255, 0.08)' : 'rgba(79, 70, 229, 0.05)',
           borderColor: isDark ? '#00e5ff' : '#4f46e5', /* Celeste neón en oscuro, Índigo en claro */
           borderWidth: 3,
@@ -524,7 +511,7 @@ const renderBarChart = () => {
         },
         {
           label: 'Asociados',
-          data: asociadosData,
+          data: asocValues,
           backgroundColor: isDark ? 'rgba(255, 0, 127, 0.08)' : 'rgba(16, 185, 129, 0.05)',
           borderColor: isDark ? '#ff007f' : '#10b981', /* Rosa neón en oscuro, Esmeralda en claro */
           borderWidth: 3,
@@ -643,15 +630,6 @@ const renderDonutChart = () => {
 
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('es-GT', { day: '2-digit', month: 'short' })
-}
-
-const formatBytes = (bytes: number, decimals = 2) => {
-  if (!bytes) return '0 Bytes'
-  const k = 1024
-  const dm = decimals < 0 ? 0 : decimals
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
 const getDaysUntil = (dateStr: string) => {
