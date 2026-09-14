@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, shallowRef, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
@@ -139,6 +139,91 @@ const downloadPDFWithProgress = async (url: string): Promise<ArrayBuffer> => {
   return fullArray.buffer
 }
 
+import PdfSearch from './PdfSearch.vue'
+
+// Estado para resaltar búsqueda
+const currentSearchQuery = ref('')
+
+const handleSearchHighlight = (query: string) => {
+  currentSearchQuery.value = query
+  // Aplicar inmediatamente a las páginas ya renderizadas
+  nextTick(() => {
+    const textLayers = document.querySelectorAll('.textLayer')
+    textLayers.forEach(layer => highlightTextInContainer(layer as HTMLElement, query))
+  })
+}
+
+const handleSearchClear = () => {
+  currentSearchQuery.value = ''
+  const textLayers = document.querySelectorAll('.textLayer')
+  textLayers.forEach(layer => highlightTextInContainer(layer as HTMLElement, ''))
+}
+
+const normalizeText = (text: string) => {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+}
+
+const highlightTextInContainer = (container: HTMLElement, query: string) => {
+  // Limpiar marcas anteriores
+  const marks = container.querySelectorAll('mark.pdf-search-highlight')
+  marks.forEach(mark => {
+    const parent = mark.parentNode
+    if (parent) {
+      parent.replaceChild(document.createTextNode(mark.textContent || ''), mark)
+      parent.normalize()
+    }
+  })
+
+  if (!query) return
+
+  const normalizedQuery = normalizeText(query)
+  if (!normalizedQuery) return
+
+  // Usar un TreeWalker para iterar sobre nodos de texto
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null)
+  const textNodes: Node[] = []
+  let node
+  while ((node = walker.nextNode())) {
+    textNodes.push(node)
+  }
+
+  textNodes.forEach(node => {
+    const text = node.nodeValue || ''
+    const normText = normalizeText(text)
+    const index = normText.indexOf(normalizedQuery)
+    
+    if (index !== -1) {
+      // Como eliminamos tildes, la longitud de caracteres puede variar en algunos idiomas,
+      // pero en español las tildes (ej: á -> a) mantienen la longitud de 1 a 1.
+      const matchLength = normalizedQuery.length
+      
+      const before = text.substring(0, index)
+      const matchStr = text.substring(index, index + matchLength)
+      const after = text.substring(index + matchLength)
+      
+      const span = document.createElement('mark')
+      span.className = 'pdf-search-highlight'
+      span.style.backgroundColor = '#ff0000' // Rojo intenso
+      span.style.color = '#ffffff' // Texto blanco para contraste
+      span.style.borderRadius = '2px'
+      span.style.padding = '0 2px'
+      span.style.boxShadow = '0 0 4px rgba(255, 0, 0, 0.8)' // Resplandor rojo
+      span.textContent = matchStr
+      
+      const parent = node.parentNode
+      if (parent) {
+        if (before) parent.insertBefore(document.createTextNode(before), node)
+        parent.insertBefore(span, node)
+        if (after) parent.insertBefore(document.createTextNode(after), node)
+        parent.removeChild(node)
+      }
+    }
+  })
+}
+
+// Variables para el documento y renderizado
+const pdfDocRef = shallowRef<any>(null)
+
 const renderPDF = async () => {
   await nextTick()
   
@@ -185,6 +270,7 @@ const renderPDF = async () => {
       wasmUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/wasm/'
     })
     pdfDoc = await loadingTask.promise
+    pdfDocRef.value = pdfDoc // Sync with reactive ref for the search component
     totalPaginas.value = pdfDoc.numPages
     
     // 4. Limpiar contenedor y ocultar el overlay de descarga
@@ -315,6 +401,31 @@ const setupIntersectionObserver = () => {
                 viewport,
                 canvas: canvas
               }).promise
+              
+              try {
+                const textContent = await page.getTextContent()
+                const textLayerDiv = document.createElement('div')
+                textLayerDiv.className = 'textLayer'
+                // Set CSS variables needed by pdf_viewer.css for scaling
+                textLayerDiv.style.setProperty('--scale-factor', viewport.scale.toString())
+                
+                pageWrapper.appendChild(textLayerDiv)
+
+                const textLayer = new pdfjsLib.TextLayer({
+                  textContentSource: textContent,
+                  container: textLayerDiv,
+                  viewport: viewport
+                })
+                await textLayer.render()
+                
+                // Aplicar resaltado si hay una búsqueda activa
+                if (currentSearchQuery.value) {
+                  highlightTextInContainer(textLayerDiv, currentSearchQuery.value)
+                }
+                
+              } catch (textErr) {
+                console.error('[PDF.js] Error renderizando capa de texto:', textErr)
+              }
               
               pageWrapper.dataset.rendered = 'true'
               if (loader) loader.remove()
@@ -619,6 +730,15 @@ const saveEdit = async (indiceId: number, event: Event) => {
       </div>
 
       <div class="flex items-center gap-4">
+        
+        <!-- Premium Expandable Search Component -->
+        <PdfSearch 
+          :pdf-doc="pdfDocRef"
+          @jump-to-page="jumpToPage"
+          @highlight="handleSearchHighlight"
+          @clear="handleSearchClear"
+        />
+
         <div class="flex gap-2">
           <button v-if="authStore.hasPermission('descargar_pdf')" @click="downloadPDF" class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors flex items-center justify-center" title="Descargar">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -837,6 +957,29 @@ const saveEdit = async (indiceId: number, event: Event) => {
 
 :deep(.pdf-page-wrapper:hover) {
   transform: translateY(-5px);
+}
+
+:deep(.textLayer) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0.2; /* Para que coincida nativamente pero casi imperceptible */
+  line-height: 1.0;
+}
+
+:deep(.textLayer > span) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+::selection {
+  background: rgba(0, 102, 204, 0.3);
 }
 
 :deep(.page-skeleton-loader) {
