@@ -36,7 +36,7 @@ const props = defineProps<{
   canCreateFolder: boolean
 }>()
 
-const emit = defineEmits(['openViewer', 'addDocument', 'deleteDocument'])
+const emit = defineEmits(['openViewer', 'addDocument', 'deleteDocument', 'moveDocument'])
 
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('es-GT', {
@@ -177,8 +177,16 @@ const resetFilters = () => {
                   <div class="header-right-actions">
                     <button 
                       v-if="authStore.user?.roles?.includes('Super Admin')"
+                      @click.stop="emit('moveDocument', doc)"
+                      class="btn-action-card move"
+                      title="Mover de categoría"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><path d="M9 14h6"></path><path d="M15 14l-3-3"></path><path d="M15 14l-3 3"></path></svg>
+                    </button>
+                    <button 
+                      v-if="authStore.user?.roles?.includes('Super Admin')"
                       @click.stop="emit('deleteDocument', doc)"
-                      class="btn-delete-card"
+                      class="btn-action-card delete"
                       title="Eliminar del expediente"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -576,7 +584,7 @@ const resetFilters = () => {
   gap: 0.5rem;
 }
 
-.btn-delete-card {
+.btn-action-card {
   background: transparent;
   border: none;
   color: #94a3b8;
@@ -590,10 +598,17 @@ const resetFilters = () => {
   border: 1px solid transparent;
 }
 
-.btn-delete-card:hover {
+.btn-action-card.delete:hover {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.3);
+  transform: scale(1.15);
+}
+
+.btn-action-card.move:hover {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0ea5e9;
+  border-color: rgba(14, 165, 233, 0.3);
   transform: scale(1.15);
 }
 

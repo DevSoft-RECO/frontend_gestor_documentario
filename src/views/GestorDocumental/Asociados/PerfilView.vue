@@ -78,6 +78,10 @@ const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('es-GT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+const isDarkMode = () => document.documentElement.classList.contains('dark')
+const getSwalBg = () => isDarkMode() ? '#1e293b' : '#ffffff'
+const getSwalColor = () => isDarkMode() ? '#f8fafc' : '#0f172a'
+
 // --- Data Fetching ---
 const loadAllData = async () => {
   isLoading.value = true
@@ -181,8 +185,8 @@ const handleDeleteDocument = async (doc: Documento) => {
     cancelButtonColor: '#64748b',
     confirmButtonText: 'Sí, mover a papelera',
     cancelButtonText: 'Cancelar',
-    background: '#1e293b',
-    color: '#ffffff'
+    background: getSwalBg(),
+    color: getSwalColor()
   })
 
   if (result.isConfirmed) {
@@ -197,8 +201,8 @@ const handleDeleteDocument = async (doc: Documento) => {
         didOpen: () => {
           Swal.showLoading()
         },
-        background: '#1e293b',
-        color: '#ffffff'
+        background: getSwalBg(),
+        color: getSwalColor()
       })
 
       const res = await fetch(`${API_URL}/api/gestor/documentos/${doc.id}/eliminar-papelera`, {
@@ -217,8 +221,8 @@ const handleDeleteDocument = async (doc: Documento) => {
         text: 'La carpeta se ha trasladado correctamente a la Papelera de Reciclaje.',
         icon: 'success',
         confirmButtonColor: '#0ea5e9',
-        background: '#1e293b',
-        color: '#ffffff'
+        background: getSwalBg(),
+        color: getSwalColor()
       })
 
       loadAllData()
@@ -229,8 +233,101 @@ const handleDeleteDocument = async (doc: Documento) => {
         text: error.message || 'Ocurrió un error al procesar la solicitud.',
         icon: 'error',
         confirmButtonColor: '#0ea5e9',
-        background: '#1e293b',
-        color: '#ffffff'
+        background: getSwalBg(),
+        color: getSwalColor()
+      })
+    }
+  }
+}
+
+const handleMoveDocument = async (doc: Documento) => {
+  const inputOptions: Record<string, string> = {}
+  
+  categoriasMaster.value.forEach(cat => {
+    if (cat.subcategorias && cat.subcategorias.length > 0) {
+      cat.subcategorias.forEach(sub => {
+        // Opción agrupada simulada: 'Categoria - Subcategoria'
+        inputOptions[sub.id] = `${cat.nombre} > ${sub.nombre}`
+      })
+    }
+  })
+
+  const { value: newSubcategoriaId } = await Swal.fire({
+    title: 'Mover Documento',
+    text: `Seleccione la nueva categoría para el documento "${doc.subcategoria.nombre}":`,
+    input: 'select',
+    inputOptions,
+    inputPlaceholder: 'Seleccione una opción...',
+    showCancelButton: true,
+    confirmButtonText: 'Mover',
+    cancelButtonText: 'Cancelar',
+    background: getSwalBg(),
+    color: getSwalColor(),
+    inputValidator: (value) => {
+      return new Promise((resolve) => {
+        if (value) {
+          if (parseInt(value) === doc.subcategoria_id) {
+            resolve('El documento ya está en esta categoría')
+          } else {
+            resolve() // changed from resolve(null) to resolve()
+          }
+        } else {
+          resolve('Debe seleccionar una categoría')
+        }
+      })
+    }
+  })
+
+  if (newSubcategoriaId) {
+    try {
+      const token = sessionStorage.getItem('access_token')
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      }
+
+      Swal.fire({
+        title: 'Moviendo...',
+        text: 'Actualizando ubicación...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading()
+        },
+        background: getSwalBg(),
+        color: getSwalColor()
+      })
+
+      const res = await fetch(`${API_URL}/api/gestor/documentos/${doc.id}/mover`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ subcategoria_id: parseInt(newSubcategoriaId) })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al mover el documento')
+      }
+
+      await Swal.fire({
+        title: '¡Movido!',
+        text: 'El documento fue cambiado de categoría exitosamente.',
+        icon: 'success',
+        confirmButtonColor: '#0ea5e9',
+        background: getSwalBg(),
+        color: getSwalColor()
+      })
+
+      loadAllData()
+    } catch (error: any) {
+      console.error(error)
+      Swal.fire({
+        title: 'Error',
+        text: error.message || 'Ocurrió un error al procesar la solicitud.',
+        icon: 'error',
+        confirmButtonColor: '#0ea5e9',
+        background: getSwalBg(),
+        color: getSwalColor()
       })
     }
   }
@@ -290,6 +387,7 @@ onMounted(() => {
             @openViewer="handleOpenViewer"
             @addDocument="showUploadModal = true"
             @deleteDocument="handleDeleteDocument"
+            @moveDocument="handleMoveDocument"
           />
         </div>
 
