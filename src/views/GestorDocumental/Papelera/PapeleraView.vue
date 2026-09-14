@@ -40,10 +40,18 @@ interface DocumentoEliminado {
 const authStore = useAuthStore()
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
+const isDarkMode = () => document.documentElement.classList.contains('dark')
+const getSwalBg = () => isDarkMode() ? '#1e293b' : '#ffffff'
+const getSwalColor = () => isDarkMode() ? '#ffffff' : '#334155'
+
 const activeTab = ref<'buzon' | 'general'>('buzon')
 const isAdmins = computed(() => {
   const roles = authStore.user?.roles || []
   return roles.includes('Super Admin') || roles.includes('Administrador') || roles.includes('Admin')
+})
+const isSuperAdmin = computed(() => {
+  const roles = authStore.user?.roles || []
+  return roles.includes('Super Admin')
 })
 
 const docsBuzon = ref<DocumentoEliminado[]>([])
@@ -215,8 +223,8 @@ const handleDownload = async (doc: DocumentoEliminado) => {
       text: 'Preparando descarga segura del documento...',
       allowOutsideClick: false,
       didOpen: () => { Swal.showLoading() },
-      background: '#1e293b',
-      color: '#ffffff'
+      background: getSwalBg(),
+      color: getSwalColor()
     })
 
     const token = sessionStorage.getItem('access_token')
@@ -244,8 +252,8 @@ const handleDownload = async (doc: DocumentoEliminado) => {
       text: error.message || 'No fue posible descargar el archivo.',
       icon: 'error',
       confirmButtonColor: '#0ea5e9',
-      background: '#1e293b',
-      color: '#ffffff'
+      background: getSwalBg(),
+      color: getSwalColor()
     })
   }
 }
@@ -262,8 +270,8 @@ const handleAssign = async (userId: number) => {
       title: 'Asignando...',
       allowOutsideClick: false,
       didOpen: () => { Swal.showLoading() },
-      background: '#1e293b',
-      color: '#ffffff'
+      background: getSwalBg(),
+      color: getSwalColor()
     })
 
     const token = sessionStorage.getItem('access_token')
@@ -284,8 +292,8 @@ const handleAssign = async (userId: number) => {
         text: 'Documento asignado correctamente al buzón del usuario.',
         icon: 'success',
         confirmButtonColor: '#0ea5e9',
-        background: '#1e293b',
-        color: '#ffffff'
+        background: getSwalBg(),
+        color: getSwalColor()
       })
       showAssignModal.value = false
       fetchGeneral()
@@ -299,8 +307,8 @@ const handleAssign = async (userId: number) => {
       text: error.message || 'No se pudo completar la asignación.',
       icon: 'error',
       confirmButtonColor: '#0ea5e9',
-      background: '#1e293b',
-      color: '#ffffff'
+      background: getSwalBg(),
+      color: getSwalColor()
     })
   }
 }
@@ -315,8 +323,8 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
     cancelButtonColor: '#64748b',
     confirmButtonText: 'Sí, eliminar de por vida',
     cancelButtonText: 'Cancelar',
-    background: '#1e293b',
-    color: '#ffffff'
+    background: getSwalBg(),
+    color: getSwalColor()
   })
 
   if (result.isConfirmed) {
@@ -325,8 +333,8 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
         title: 'Depurando...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading() },
-        background: '#1e293b',
-        color: '#ffffff'
+        background: getSwalBg(),
+        color: getSwalColor()
       })
 
       const token = sessionStorage.getItem('access_token')
@@ -343,8 +351,8 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
           text: 'El documento se eliminó definitivamente del almacenamiento en la nube.',
           icon: 'success',
           confirmButtonColor: '#0ea5e9',
-          background: '#1e293b',
-          color: '#ffffff'
+          background: getSwalBg(),
+          color: getSwalColor()
         })
         fetchGeneral()
       } else {
@@ -357,8 +365,152 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
         text: error.message || 'No se pudo eliminar permanentemente.',
         icon: 'error',
         confirmButtonColor: '#0ea5e9',
-        background: '#1e293b',
-        color: '#ffffff'
+        background: getSwalBg(),
+        color: getSwalColor()
+      })
+    }
+  }
+}
+
+const handlePurgeMasive = async () => {
+  const { value: formValues } = await Swal.fire({
+    title: 'Purga Masiva de Papelera',
+    html:
+      '<div class="flex flex-col gap-3 text-left mt-3">' +
+      '<label class="text-xs text-slate-700 dark:text-slate-300 font-bold uppercase">Desde (Opcional)</label>' +
+      '<input id="swal-fecha-inicio" type="date" class="swal2-input !w-full !m-0 !mt-1 !bg-transparent !text-inherit" style="box-sizing:border-box">' +
+      '<label class="text-xs text-slate-700 dark:text-slate-300 font-bold uppercase mt-2">Hasta (Opcional)</label>' +
+      '<input id="swal-fecha-fin" type="date" class="swal2-input !w-full !m-0 !mt-1 !bg-transparent !text-inherit" style="box-sizing:border-box">' +
+      '<label class="text-xs text-slate-700 dark:text-slate-300 font-bold uppercase mt-2">Tipo de Archivos (Opcional)</label>' +
+      '<select id="swal-tipo-accion" class="swal2-select !w-full !m-0 !mt-1 !text-sm !bg-transparent !text-inherit" style="box-sizing:border-box">' +
+      '<option value="todos">Todos los eliminados</option>' +
+      '<option value="reemplazo">Solo Páginas Reemplazadas</option>' +
+      '<option value="eliminacion_pagina">Solo Páginas Eliminadas</option>' +
+      '<option value="eliminacion_documento">Solo Documentos Completos</option>' +
+      '</select>' +
+      '</div>',
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: 'Pre-Visualizar Purga',
+    cancelButtonText: 'Cancelar',
+    background: getSwalBg(),
+    color: getSwalColor(),
+    confirmButtonColor: '#ef4444',
+    preConfirm: () => {
+      const inicio = (document.getElementById('swal-fecha-inicio') as HTMLInputElement).value
+      const fin = (document.getElementById('swal-fecha-fin') as HTMLInputElement).value
+      const tipo = (document.getElementById('swal-tipo-accion') as HTMLSelectElement).value
+      
+      if (inicio && fin && inicio > fin) {
+        Swal.showValidationMessage('La fecha de inicio debe ser menor o igual a la final')
+        return false
+      }
+      return { fecha_inicio: inicio, fecha_fin: fin, tipo_accion: tipo }
+    }
+  })
+
+  if (formValues) {
+    try {
+      Swal.fire({
+        title: 'Calculando...',
+        text: 'Buscando registros a purgar...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() },
+        background: getSwalBg(),
+        color: getSwalColor()
+      })
+
+      const token = sessionStorage.getItem('access_token')
+      const preRes = await fetch(`${API_URL}/api/gestor/papelera/previsualizar-purga`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formValues)
+      })
+      
+      const preData = await preRes.json()
+      Swal.close()
+
+      if (!preRes.ok) throw new Error(preData.error || 'Error al previsualizar la purga')
+
+      if (preData.count === 0) {
+        Swal.fire({
+          title: 'Sin Resultados',
+          text: 'No hay documentos en la papelera que coincidan con estos filtros.',
+          icon: 'info',
+          confirmButtonColor: '#0ea5e9',
+          background: getSwalBg(),
+          color: getSwalColor()
+        })
+        return
+      }
+
+      // Confirmación Final
+      let mensajeConfirmacion = `¿Estás completamente seguro de purgar <b>${preData.count}</b> registro(s) de la papelera con el filtro <b>${formValues.tipo_accion.replace(/_/g, ' ').toUpperCase()}</b>?`
+      if (formValues.fecha_inicio || formValues.fecha_fin) {
+        const rango = (formValues.fecha_inicio ? `desde <b>${formValues.fecha_inicio}</b> ` : '') + (formValues.fecha_fin ? `hasta <b>${formValues.fecha_fin}</b>` : '')
+        mensajeConfirmacion = `¿Estás completamente seguro de purgar <b>${preData.count}</b> registro(s) de la papelera ${rango} con el filtro <b>${formValues.tipo_accion.replace(/_/g, ' ').toUpperCase()}</b>?`
+      }
+      
+      const confirm = await Swal.fire({
+        title: '¿Confirmar Purga Masiva?',
+        html: `${mensajeConfirmacion}<br><br><span class="text-rose-500 font-bold">Esta acción borrará definitivamente los archivos físicos del servidor en la nube y es irreversible.</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: `Sí, Purgar ${preData.count} Archivos`,
+        cancelButtonText: 'Cancelar',
+        background: getSwalBg(),
+        color: getSwalColor()
+      })
+
+      if (confirm.isConfirmed) {
+        Swal.fire({
+          title: 'Purgando Archivos...',
+          html: 'Esto puede tomar un momento si hay muchos archivos...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading() },
+          background: getSwalBg(),
+          color: getSwalColor()
+        })
+
+        const res = await fetch(`${API_URL}/api/gestor/papelera/purgar-masivo`, {
+          method: 'DELETE',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formValues)
+        })
+
+        const data = await res.json()
+        Swal.close()
+
+        if (res.ok) {
+          Swal.fire({
+            title: 'Purga Completada',
+            text: data.message || `Se purgaron ${data.count} archivos con éxito.`,
+            icon: 'success',
+            confirmButtonColor: '#0ea5e9',
+            background: getSwalBg(),
+            color: getSwalColor()
+          })
+          fetchGeneral() // Recargar tabla
+        } else {
+          throw new Error(data.error || 'Error desconocido al purgar')
+        }
+      }
+    } catch (error: any) {
+      Swal.fire({
+        title: 'Error',
+        text: error.message || 'Ocurrió un error al ejecutar la purga masiva.',
+        icon: 'error',
+        confirmButtonColor: '#0ea5e9',
+        background: getSwalBg(),
+        color: getSwalColor()
       })
     }
   }
@@ -394,7 +546,10 @@ const handleDeletePermanent = async (doc: DocumentoEliminado) => {
     <div v-if="activeTab === 'general' && isAdmins" class="bg-white/70 backdrop-blur-lg border border-slate-900/5 dark:border-white/5 rounded-2xl p-5 shadow-lg shadow-slate-900/2 dark:bg-slate-900/45 dark:shadow-black/20">
       <div class="flex justify-between items-center mb-5">
         <h3 class="font-['Outfit'] text-base font-bold text-slate-800 dark:text-slate-100">Listado General de Expedientes Eliminados</h3>
-        <button @click="fetchGeneral" class="bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 border border-slate-900/5 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-350 dark:border-white/10 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition duration-200">🔄 Actualizar</button>
+        <div class="flex gap-2">
+          <button v-if="isSuperAdmin" @click="handlePurgeMasive" class="bg-rose-500 hover:bg-rose-600 text-white border-0 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition duration-200 flex items-center gap-1 shadow-sm shadow-rose-500/20">🔥 Purga Masiva</button>
+          <button @click="fetchGeneral" class="bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 border border-slate-900/5 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-350 dark:border-white/10 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition duration-200">🔄 Actualizar</button>
+        </div>
       </div>
 
       <!-- Filtros de búsqueda -->
