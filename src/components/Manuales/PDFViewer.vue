@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, shallowRef, watch, nextTick } from 'vue'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
@@ -52,7 +52,7 @@ const activeViewerMode = ref<'original' | number>('original')
 
 const pagesContainer = ref<HTMLElement | null>(null)
 const scrollContainer = ref<HTMLElement | null>(null)
-let pdfDoc: pdfjsLib.PDFDocumentProxy | null = null
+const pdfDocRef = shallowRef<pdfjsLib.PDFDocumentProxy | null>(null)
 let currentObserver: IntersectionObserver | null = null
 
 const getVigenciaStatus = () => {
@@ -140,8 +140,8 @@ const renderPDF = async () => {
       standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/standard_fonts/',
       wasmUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/wasm/'
     })
-    pdfDoc = await loadingTask.promise
-    totalPaginas.value = pdfDoc.numPages
+    pdfDocRef.value = await loadingTask.promise
+    totalPaginas.value = pdfDocRef.value.numPages
     currentPage.value = 1
     
     await nextTick()
@@ -149,8 +149,8 @@ const renderPDF = async () => {
     isRendering.value = false
 
     // Inyectar placeholders de página para Lazy Loading
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const page = await pdfDoc.getPage(i)
+    for (let i = 1; i <= pdfDocRef.value.numPages; i++) {
+      const page = await pdfDocRef.value.getPage(i)
       let viewport = page.getViewport({ scale: zoomLevel.value })
       const MAX_CANVAS_HEIGHT = 3000
       if (viewport.height > MAX_CANVAS_HEIGHT) {
@@ -190,13 +190,13 @@ const renderPDF = async () => {
 }
 
 const reRenderPages = async () => {
-  if (!pdfDoc || !pagesContainer.value) return
+  if (!pdfDocRef.value || !pagesContainer.value) return
   if (currentObserver) currentObserver.disconnect()
   
   pagesContainer.value.innerHTML = ''
   
-  for (let i = 1; i <= pdfDoc.numPages; i++) {
-    const page = await pdfDoc.getPage(i)
+  for (let i = 1; i <= pdfDocRef.value.numPages; i++) {
+    const page = await pdfDocRef.value.getPage(i)
     let viewport = page.getViewport({ scale: zoomLevel.value })
     const MAX_CANVAS_HEIGHT = 3000
     if (viewport.height > MAX_CANVAS_HEIGHT) {
@@ -227,6 +227,80 @@ const reRenderPages = async () => {
   setupIntersectionObserver()
 }
 
+import PdfSearch from '@/components/gestor/perfil/PdfSearch.vue'
+
+const currentSearchQuery = ref('')
+
+const handleSearchHighlight = (query: string) => {
+  currentSearchQuery.value = query
+  nextTick(() => {
+    const textLayers = document.querySelectorAll('.textLayer')
+    textLayers.forEach(layer => highlightTextInContainer(layer as HTMLElement, query))
+  })
+}
+
+const handleSearchClear = () => {
+  currentSearchQuery.value = ''
+  const textLayers = document.querySelectorAll('.textLayer')
+  textLayers.forEach(layer => highlightTextInContainer(layer as HTMLElement, ''))
+}
+
+const normalizeText = (text: string) => {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+}
+
+const highlightTextInContainer = (container: HTMLElement, query: string) => {
+  const marks = container.querySelectorAll('mark.pdf-search-highlight')
+  marks.forEach(mark => {
+    const parent = mark.parentNode
+    if (parent) {
+      parent.replaceChild(document.createTextNode(mark.textContent || ''), mark)
+      parent.normalize()
+    }
+  })
+
+  if (!query) return
+  const normalizedQuery = normalizeText(query)
+  if (!normalizedQuery) return
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null)
+  const textNodes: Node[] = []
+  let node
+  while ((node = walker.nextNode())) {
+    textNodes.push(node)
+  }
+
+  textNodes.forEach(node => {
+    const text = node.nodeValue || ''
+    const normText = normalizeText(text)
+    const index = normText.indexOf(normalizedQuery)
+    
+    if (index !== -1) {
+      const matchLength = normalizedQuery.length
+      const before = text.substring(0, index)
+      const matchStr = text.substring(index, index + matchLength)
+      const after = text.substring(index + matchLength)
+      
+      const span = document.createElement('mark')
+      span.className = 'pdf-search-highlight'
+      span.style.backgroundColor = '#ff0000'
+      span.style.color = '#ffffff'
+      span.style.borderRadius = '2px'
+      span.style.padding = '0 2px'
+      span.style.boxShadow = '0 0 4px rgba(255, 0, 0, 0.8)'
+      span.textContent = matchStr
+      
+      const parent = node.parentNode
+      if (parent) {
+        parent.insertBefore(document.createTextNode(before), node)
+        parent.insertBefore(span, node)
+        parent.insertBefore(document.createTextNode(after), node)
+        parent.removeChild(node)
+      }
+    }
+  })
+}
+
 const setupIntersectionObserver = () => {
   currentObserver = new IntersectionObserver((entries) => {
     entries.forEach(async (entry) => {
@@ -243,8 +317,8 @@ const setupIntersectionObserver = () => {
             const canvas = pageWrapper.querySelector('canvas')
             const loader = pageWrapper.querySelector('.page-skeleton-loader')
             
-            if (canvas && pdfDoc) {
-              const page = await pdfDoc.getPage(pageNum)
+            if (canvas && pdfDocRef.value) {
+              const page = await pdfDocRef.value.getPage(pageNum)
               let viewport = page.getViewport({ scale: zoomLevel.value })
               const MAX_CANVAS_HEIGHT = 3000
               if (viewport.height > MAX_CANVAS_HEIGHT) {
@@ -258,6 +332,28 @@ const setupIntersectionObserver = () => {
                 viewport,
                 canvas: canvas
               }).promise
+
+              try {
+                const textContent = await page.getTextContent()
+                const textLayerDiv = document.createElement('div')
+                textLayerDiv.className = 'textLayer'
+                textLayerDiv.style.setProperty('--scale-factor', viewport.scale.toString())
+                
+                pageWrapper.appendChild(textLayerDiv)
+
+                const textLayer = new pdfjsLib.TextLayer({
+                  textContentSource: textContent,
+                  container: textLayerDiv,
+                  viewport: viewport
+                })
+                await textLayer.render()
+                
+                if (currentSearchQuery.value) {
+                  highlightTextInContainer(textLayerDiv, currentSearchQuery.value)
+                }
+              } catch (textErr) {
+                console.error('[PDF.js] Error renderizando capa de texto:', textErr)
+              }
               
               pageWrapper.dataset.rendered = 'true'
               if (loader) loader.remove()
@@ -287,7 +383,7 @@ const jumpToPage = (pageNum: number) => {
 
 const closeViewer = () => {
   emit('update:show', false)
-  pdfDoc = null
+  pdfDocRef.value = null
   if (currentObserver) currentObserver.disconnect()
 }
 
@@ -371,6 +467,14 @@ watch(activeViewerMode, () => {
         </div>
 
         <div class="flex items-center gap-4">
+          <!-- Premium Expandable Search Component -->
+          <PdfSearch 
+            :pdf-doc="pdfDocRef"
+            @jump-to-page="jumpToPage"
+            @highlight="handleSearchHighlight"
+            @clear="handleSearchClear"
+          />
+
           <!-- Zoom -->
           <div class="bg-slate-900 text-white px-3 py-1.5 rounded-xl flex items-center gap-3 text-xs font-bold border border-slate-700 shadow-lg">
             <button @click="zoomLevel -= 0.1" :disabled="zoomLevel <= 0.5" class="hover:text-indigo-400 disabled:opacity-30">−</button>
@@ -552,5 +656,28 @@ watch(activeViewerMode, () => {
 @keyframes indeterminate {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(350%); }
+}
+
+:deep(.textLayer) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0.2;
+  line-height: 1.0;
+}
+
+:deep(.textLayer > span) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+::selection {
+  background: rgba(0, 102, 204, 0.3);
 }
 </style>
