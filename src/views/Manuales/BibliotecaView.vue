@@ -60,6 +60,38 @@ const selectedCategoryId = ref<number | 'all'>('all')
 const selectedSubcategoryId = ref<number | 'all'>('all')
 const viewMode = ref<'grid' | 'list'>('grid')
 
+// Accordion state: qué secciones están expandidas
+const expandedGavetas = ref<Set<number>>(new Set())
+const expandedPortafolios = ref<Set<number>>(new Set())
+
+const toggleGaveta = (id: number) => {
+  if (expandedGavetas.value.has(id)) {
+    expandedGavetas.value.delete(id)
+  } else {
+    expandedGavetas.value.add(id)
+  }
+}
+
+const togglePortafolio = (id: number) => {
+  if (expandedPortafolios.value.has(id)) {
+    expandedPortafolios.value.delete(id)
+  } else {
+    expandedPortafolios.value.add(id)
+  }
+}
+
+const expandAll = () => {
+  filteredBiblioteca.value.forEach(cat => {
+    expandedGavetas.value.add(cat.id)
+    cat.subcategorias.forEach(sub => expandedPortafolios.value.add(sub.id))
+  })
+}
+
+const collapseAll = () => {
+  expandedGavetas.value.clear()
+  expandedPortafolios.value.clear()
+}
+
 // Reset subcategory when category changes
 watch(selectedCategoryId, () => {
   selectedSubcategoryId.value = 'all'
@@ -87,6 +119,8 @@ const loadBiblioteca = async () => {
     })
     if (res.ok) {
       biblioteca.value = await res.json()
+      // Auto-expandir todo al cargar
+      expandAll()
     } else {
       console.error('Error cargando manuales')
     }
@@ -148,6 +182,29 @@ const filteredBiblioteca = computed(() => {
   }).filter(c => c !== null) as Categoria[]
 })
 
+// Estadísticas rápidas
+const totalDocumentos = computed(() => {
+  let count = 0
+  filteredBiblioteca.value.forEach(cat => {
+    cat.subcategorias.forEach(sub => {
+      sub.carpetas.forEach(carp => {
+        count += carp.documentos.length
+      })
+    })
+  })
+  return count
+})
+
+const totalCarpetas = computed(() => {
+  let count = 0
+  filteredBiblioteca.value.forEach(cat => {
+    cat.subcategorias.forEach(sub => {
+      count += sub.carpetas.length
+    })
+  })
+  return count
+})
+
 const getVigenciaStatus = (manual: Manual) => {
   if (!manual.fecha_vigencia) {
     return {
@@ -201,250 +258,280 @@ onMounted(() => {
 <template>
   <div class="biblioteca-view min-h-[calc(100vh-64px)] bg-slate-50 dark:bg-slate-950 font-['Plus_Jakarta_Sans'] transition-colors duration-300">
     
-    <!-- HEADER STUNNING -->
-    <div class="premium-header relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white py-12 px-8 md:px-12 border-b border-white/10 shadow-xl">
+    <!-- HEADER COMPACTO -->
+    <div class="premium-header relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white py-8 px-6 md:px-10 border-b border-white/10 shadow-xl">
       <!-- Decoración abstracta -->
       <div class="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl"></div>
       <div class="absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl"></div>
       
-      <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div>
-          <span class="text-xs font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Centro de Conocimiento</span>
-          <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mt-2 text-slate-100 font-['Outfit']">Biblioteca de Normativas</h1>
-          <p class="text-sm text-slate-300 mt-1 max-w-2xl">Visualiza, busca y lee de forma ágil y segura toda la documentación, guías de operación y políticas autorizadas de la organización.</p>
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+        <div class="min-w-0">
+          <span class="text-[0.6rem] font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Centro de Conocimiento</span>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-1.5 text-slate-100 font-['Outfit']">Biblioteca de Normativas</h1>
+          <p class="text-xs text-slate-400 mt-1 max-w-xl">Visualiza, busca y lee la documentación, guías de operación y políticas autorizadas.</p>
         </div>
         
-        <!-- Buscador integrado -->
-        <div class="w-full md:w-80 search-premium-wrapper">
-          <div class="relative flex items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 shadow-inner hover:border-white/35 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-slate-300 ml-1 shrink-0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <!-- Buscador + Filtros compactos -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <!-- Buscador -->
+          <div class="relative flex items-center bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-3 py-2.5 hover:border-white/35 transition-all w-full sm:w-72">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-slate-300 shrink-0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input 
               type="text" 
               v-model="searchQuery" 
-              placeholder="Buscar manual o sección..." 
-              class="w-full bg-transparent border-none outline-none pl-3 text-sm text-white placeholder-slate-400"
+              placeholder="Buscar manual, acta..." 
+              class="w-full bg-transparent border-none outline-none pl-2.5 text-sm text-white placeholder-slate-400"
             />
             <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search-btn-white">×</button>
+          </div>
+
+          <!-- Dropdown Gaveta -->
+          <select 
+            v-model="selectedCategoryId"
+            class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none cursor-pointer hover:border-white/35 transition-all appearance-none select-dark"
+          >
+            <option value="all" class="bg-slate-900 text-white">📂 Todas las Gavetas</option>
+            <option v-for="cat in biblioteca" :key="cat.id" :value="cat.id" class="bg-slate-900 text-white">📁 {{ cat.nombre }}</option>
+          </select>
+
+          <!-- Dropdown Portafolio -->
+          <select 
+            v-if="availableSubcategorias.length > 0"
+            v-model="selectedSubcategoryId"
+            class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none cursor-pointer hover:border-white/35 transition-all appearance-none select-dark"
+          >
+            <option value="all" class="bg-slate-900 text-white">📁 Todos los Portafolios</option>
+            <option v-for="sub in availableSubcategorias" :key="sub.id" :value="sub.id" class="bg-slate-900 text-white">📄 {{ sub.nombre }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- BARRA DE CONTROLES -->
+    <div class="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-6 md:px-10">
+      <div class="flex items-center justify-between py-3 gap-4">
+        <!-- Stats rápidos -->
+        <div class="flex items-center gap-4 text-[0.65rem] font-bold text-slate-400 dark:text-slate-500">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            {{ filteredBiblioteca.length }} Gaveta{{ filteredBiblioteca.length !== 1 ? 's' : '' }}
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            {{ totalCarpetas }} Carpeta{{ totalCarpetas !== 1 ? 's' : '' }}
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            {{ totalDocumentos }} Documento{{ totalDocumentos !== 1 ? 's' : '' }}
+          </span>
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex items-center gap-2">
+          <!-- Expandir / Colapsar -->
+          <button 
+            @click="expandAll()" 
+            class="px-2.5 py-1.5 rounded-lg text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            title="Expandir todo"
+          >⬇️ Expandir</button>
+          <button 
+            @click="collapseAll()" 
+            class="px-2.5 py-1.5 rounded-lg text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            title="Colapsar todo"
+          >⬆️ Colapsar</button>
+          
+          <div class="w-px h-5 bg-slate-200 dark:bg-slate-700"></div>
+
+          <!-- Vista -->
+          <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+            <button 
+              @click="viewMode = 'grid'" 
+              :class="[
+                'px-2.5 py-1 rounded-md text-[0.65rem] font-bold transition-all flex items-center gap-1',
+                viewMode === 'grid' 
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-slate-500 dark:text-slate-400'
+              ]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Tarjetas
+            </button>
+            <button 
+              @click="viewMode = 'list'" 
+              :class="[
+                'px-2.5 py-1 rounded-md text-[0.65rem] font-bold transition-all flex items-center gap-1',
+                viewMode === 'list' 
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-slate-500 dark:text-slate-400'
+              ]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              Lista
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- CUERPO PRINCIPAL -->
-    <div class="max-w-7xl mx-auto py-8 px-6 md:px-8 flex flex-col lg:flex-row gap-8">
-      <!-- MENU LATERAL: GAVETAS -->
-      <aside class="w-full lg:w-64 shrink-0 space-y-3">
-        <div class="text-[0.7rem] font-extrabold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 mb-2">Gavetas (Principales)</div>
-        
-        <button 
-          @click="selectedCategoryId = 'all'" 
-          :class="[
-            'w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition-all',
-            selectedCategoryId === 'all' 
-              ? 'bg-indigo-650 dark:bg-indigo-900 text-white shadow-lg shadow-indigo-600/10' 
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          ]"
-        >
-          <span class="text-base">📂</span>
-          <span>Todas las Gavetas</span>
-        </button>
+    <!-- CUERPO PRINCIPAL FULL WIDTH -->
+    <div class="px-6 md:px-10 py-6">
+      <!-- Loading -->
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 gap-4">
+        <div class="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-slate-400">Indexando biblioteca de normativas...</p>
+      </div>
 
-        <button 
-          v-for="cat in biblioteca" 
-          :key="cat.id"
-          @click="selectedCategoryId = cat.id"
-          :class="[
-            'w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-3 transition-all',
-            selectedCategoryId === cat.id 
-              ? 'bg-indigo-650 dark:bg-indigo-900 text-white shadow-lg shadow-indigo-600/10' 
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          ]"
-        >
-          <span class="text-base">📁</span>
-          <span class="truncate">{{ cat.nombre }}</span>
-        </button>
+      <!-- Empty State -->
+      <div v-else-if="filteredBiblioteca.length === 0" class="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 p-16 rounded-2xl text-center space-y-4 shadow-sm max-w-lg mx-auto">
+        <span class="text-4xl">📚</span>
+        <h3 class="text-lg font-black text-slate-800 dark:text-slate-200">No se encontraron normativas</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Es posible que no tengas puestos autorizados asignados a las normativas existentes o que no existan documentos cargados bajo los filtros seleccionados.</p>
+        <button @click="searchQuery = ''; selectedCategoryId = 'all'; selectedSubcategoryId = 'all'" class="btn-clear-filters">Restaurar Filtros</button>
+      </div>
 
-        <!-- FILTRO DE PORTAFOLIOS -->
-        <div v-if="availableSubcategorias.length > 0" class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-          <div class="text-[0.7rem] font-extrabold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 mb-2">Portafolios</div>
+      <!-- ACCORDION DE GAVETAS -->
+      <div v-else class="space-y-4">
+        <div v-for="cat in filteredBiblioteca" :key="cat.id" class="gaveta-accordion rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden transition-all">
           
+          <!-- Header de la Gaveta (clickeable) -->
           <button 
-            @click="selectedSubcategoryId = 'all'" 
-            :class="[
-              'w-full text-left px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-3 transition-all',
-              selectedSubcategoryId === 'all' 
-                ? 'bg-emerald-600 dark:bg-emerald-800 text-white shadow-lg shadow-emerald-600/10' 
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            ]"
+            @click="toggleGaveta(cat.id)" 
+            class="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
           >
-            <span>📁</span>
-            <span>Todos los Portafolios</span>
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="text-left min-w-0">
+                <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">{{ cat.nombre }}</h2>
+                <p class="text-[0.6rem] text-slate-400 dark:text-slate-500 font-bold">{{ cat.subcategorias.length }} portafolio{{ cat.subcategorias.length !== 1 ? 's' : '' }}</p>
+              </div>
+            </div>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" 
+              class="text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0"
+              :class="{ 'rotate-180': expandedGavetas.has(cat.id) }"
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </button>
 
-          <button 
-            v-for="sub in availableSubcategorias" 
-            :key="sub.id"
-            @click="selectedSubcategoryId = sub.id"
-            :class="[
-              'w-full text-left px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-3 transition-all',
-              selectedSubcategoryId === sub.id 
-                ? 'bg-emerald-600 dark:bg-emerald-800 text-white shadow-lg shadow-emerald-600/10' 
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            ]"
-          >
-            <span>📄</span>
-            <span class="truncate">{{ sub.nombre }}</span>
-          </button>
-        </div>
-      </aside>
-
-      <!-- SECCIÓN DE CARPETAS DE MANUALES -->
-      <div class="flex-1 space-y-12">
-        <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 gap-4">
-          <div class="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <p class="text-sm font-bold text-slate-400">Indexando biblioteca de normativas...</p>
-        </div>
-
-        <div v-else-if="filteredBiblioteca.length === 0" class="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 p-16 rounded-3xl text-center space-y-4 shadow-sm max-w-xl mx-auto">
-          <span class="text-4xl">📚</span>
-          <h3 class="text-lg font-black text-slate-800 dark:text-slate-200">No se encontraron normativas</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Es posible que no tengas puestos autorizados asignados a las normativas existentes o que no existan documentos cargados bajo los filtros seleccionados.</p>
-          <button @click="searchQuery = ''; selectedCategoryId = 'all'; selectedSubcategoryId = 'all'" class="btn-clear-filters">Restaurar Filtros</button>
-        </div>
-
-        <!-- LISTADO DE GAVETAS/PORTAFOLIOS/CARPETAS -->
-        <div v-else class="space-y-8">
-          <!-- Selector de Visualización (Tarjetas vs Lista) -->
-          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Visualización de Documentos</div>
-            <div class="flex items-center bg-slate-250 dark:bg-slate-800 p-1 rounded-xl">
+          <!-- Contenido expandible de la Gaveta -->
+          <div v-show="expandedGavetas.has(cat.id)" class="border-t border-slate-100 dark:border-slate-800">
+            
+            <!-- Portafolios dentro de esta gaveta -->
+            <div v-for="sub in cat.subcategorias" :key="sub.id" class="border-b border-slate-100 dark:border-slate-800/60 last:border-b-0">
+              
+              <!-- Header del Portafolio -->
               <button 
-                @click="viewMode = 'grid'" 
-                :class="[
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
-                  viewMode === 'grid' 
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                ]"
+                @click="togglePortafolio(sub.id)" 
+                class="w-full flex items-center justify-between px-5 py-3 pl-10 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"
               >
-                <span>🎴</span> Tarjetas
-              </button>
-              <button 
-                @click="viewMode = 'list'" 
-                :class="[
-                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
-                  viewMode === 'list' 
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                ]"
-              >
-                <span>📝</span> Lista
-              </button>
-            </div>
-          </div>
-
-          <div v-for="cat in filteredBiblioteca" :key="cat.id" class="folder-group-wrapper animate-in fade-in slide-in-from-bottom-2">
-            <!-- Título de la Gaveta -->
-            <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3 mb-6">
-              <span class="text-xl">📂</span>
-              <h2 class="text-base font-extrabold text-slate-800 dark:text-slate-200 tracking-tight font-['Outfit']">Gaveta: {{ cat.nombre }}</h2>
-            </div>
-
-            <!-- Portafolios (Nivel 1) -->
-            <div class="space-y-8">
-              <div v-for="sub in cat.subcategorias" :key="sub.id" class="pl-4 border-l-2 border-slate-200 dark:border-slate-800 space-y-6">
-                <div class="flex items-center gap-2">
-                  <span class="text-base">📁</span>
-                  <h3 class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">Portafolio: {{ sub.nombre }}</h3>
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  </div>
+                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{{ sub.nombre }}</span>
+                  <span class="text-[0.55rem] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md shrink-0">{{ sub.carpetas.length }} carpeta{{ sub.carpetas.length !== 1 ? 's' : '' }}</span>
                 </div>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" 
+                  class="text-slate-300 dark:text-slate-600 transition-transform duration-200 shrink-0"
+                  :class="{ 'rotate-180': expandedPortafolios.has(sub.id) }"
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
 
-                <!-- Carpetas (Nivel 2) -->
-                <div v-for="carp in sub.carpetas" :key="carp.id" class="subfolder-body bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700 space-y-4">
-                  <div class="flex items-center gap-2">
-                    <span class="text-base text-amber-500">🗂️</span>
-                    <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200">Carpeta: {{ carp.nombre }}</h4>
+              <!-- Carpetas del Portafolio -->
+              <div v-show="expandedPortafolios.has(sub.id)" class="px-5 pl-14 pb-5 pt-2 space-y-4">
+                <div v-for="carp in sub.carpetas" :key="carp.id">
+                  
+                  <!-- Título de la carpeta -->
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="text-amber-500 text-sm">🗂️</span>
+                    <h4 class="text-[0.7rem] font-extrabold text-slate-600 dark:text-slate-400 uppercase tracking-wider">{{ carp.nombre }}</h4>
+                    <span class="text-[0.55rem] font-bold text-slate-400 dark:text-slate-500">· {{ carp.documentos.length }} doc{{ carp.documentos.length !== 1 ? 's' : '' }}</span>
                   </div>
 
                   <!-- Grid de Manuales (Documentos de Lectura) -->
-                  <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div v-if="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     <div 
                       v-for="doc in carp.documentos" 
                       :key="doc.id"
                       @click="openManual(doc)"
-                      class="manual-card bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 cursor-pointer flex items-center justify-between gap-4 transition-all hover:scale-[1.03] active:scale-[0.98] group hover:border-indigo-300 dark:hover:border-indigo-900/60 shadow-sm"
+                      class="manual-card bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl p-3.5 cursor-pointer flex flex-col gap-2.5 transition-all hover:scale-[1.02] active:scale-[0.98] group hover:border-indigo-300 dark:hover:border-indigo-800 hover:shadow-md"
                     >
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/20 transition-all group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-100 dark:group-hover:border-indigo-900/20">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div class="flex items-start gap-3 min-w-0">
+                        <div class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/20 transition-all group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-100 dark:group-hover:border-indigo-900/20">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         </div>
                         <div class="min-w-0 flex-1">
-                          <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 class="text-[0.75rem] font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400" :title="doc.titulo">{{ doc.titulo }}</h4>
-                            <span :class="['px-1.5 py-0.5 rounded font-black text-[0.5rem] uppercase tracking-wider shrink-0', getVigenciaStatus(doc).class]">
+                          <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                            <h4 class="text-[0.72rem] font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 leading-tight" :title="doc.titulo">{{ doc.titulo }}</h4>
+                          </div>
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <span :class="['px-1.5 py-0.5 rounded font-black text-[0.48rem] uppercase tracking-wider shrink-0', getVigenciaStatus(doc).class]">
                               {{ getVigenciaStatus(doc).label }}
                             </span>
-                          </div>
-                          <p class="text-[0.6rem] text-slate-500 dark:text-slate-555 font-medium mb-1">Tamaño: <span class="font-bold">{{ doc.total_paginas }} págs</span></p>
-                          <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6rem] text-slate-400 dark:text-slate-555">
-                            <span v-if="doc.numero_acta" class="bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded font-bold">📜 {{ doc.numero_acta }}</span>
-                            <span v-if="doc.fecha_aprobacion">📅 Aprob: {{ formatDate(doc.fecha_aprobacion) }}</span>
-                            <span v-if="doc.fecha_vigencia">⏳ Vigencia: {{ formatDate(doc.fecha_vigencia) }}</span>
-                          </div>
-
-                          <div v-if="getLatestActiveUpdate(doc)" class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1" @click.stop>
-                            <p class="text-[0.55rem] font-black text-slate-400 dark:text-slate-555 uppercase tracking-wider">🔄 Última Hoja de Cambio:</p>
-                            <div 
-                              v-for="upd in [getLatestActiveUpdate(doc)].filter(Boolean) as Actualizacion[]" 
-                              :key="upd.id"
-                              @click="openManual(doc)"
-                              class="flex flex-col gap-0.5 text-[0.65rem] text-slate-500 bg-white dark:bg-slate-900/50 p-2 rounded border border-slate-150 dark:border-slate-800/80 cursor-pointer transition-all hover:border-indigo-300 dark:hover:border-indigo-900/55"
-                            >
-                              <div class="flex items-center gap-1.5 w-full">
-                                <span class="font-bold shrink-0 text-slate-700 dark:text-slate-350">📜 Acta: {{ upd.numero_acta }}</span>
-                                <span class="text-[0.55rem] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.2 rounded border border-indigo-100/10">Ver Hojas 👁️</span>
-                              </div>
-                            </div>
+                            <span class="text-[0.58rem] text-slate-400 dark:text-slate-500 font-bold">{{ doc.total_paginas }} págs</span>
                           </div>
                         </div>
                       </div>
-                      <span class="shrink-0 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                      </span>
+
+                      <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.56rem] text-slate-400 dark:text-slate-500">
+                        <span v-if="doc.numero_acta" class="bg-slate-100 dark:bg-slate-700/50 px-1.5 py-0.5 rounded font-bold">📜 {{ doc.numero_acta }}</span>
+                        <span v-if="doc.fecha_aprobacion">📅 {{ formatDate(doc.fecha_aprobacion) }}</span>
+                        <span v-if="doc.fecha_vigencia">⏳ {{ formatDate(doc.fecha_vigencia) }}</span>
+                      </div>
+
+                      <div v-if="getLatestActiveUpdate(doc)" class="pt-2 border-t border-slate-100 dark:border-slate-700/40" @click.stop>
+                        <div 
+                          v-for="upd in [getLatestActiveUpdate(doc)].filter(Boolean) as Actualizacion[]" 
+                          :key="upd.id"
+                          @click="openManual(doc)"
+                          class="flex items-center gap-1.5 text-[0.58rem] text-indigo-500 dark:text-indigo-400 font-bold cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                        >
+                          <span>🔄</span>
+                          <span>Acta: {{ upd.numero_acta }}</span>
+                          <span class="text-[0.5rem] bg-indigo-50 dark:bg-indigo-950/40 px-1 py-0.5 rounded border border-indigo-100/20">Ver Hojas 👁️</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   <!-- Lista de Manuales (Documentos de Lectura) -->
-                  <div v-else class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-slate-50 dark:bg-slate-900">
+                  <div v-else class="divide-y divide-slate-100 dark:divide-slate-700/40 border border-slate-200 dark:border-slate-700/60 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/30">
                     <div 
                       v-for="doc in carp.documentos" 
                       :key="doc.id"
                       @click="openManual(doc)"
-                      class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <div class="flex items-center gap-4 min-w-0">
-                        <div class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/20">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/20">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         </div>
                         <div class="min-w-0">
                           <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-bold text-slate-800 dark:text-slate-100 hover:text-indigo-650">{{ doc.titulo }}</span>
-                            <span :class="['px-1.5 py-0.5 rounded font-black text-[0.5rem] uppercase tracking-wider shrink-0', getVigenciaStatus(doc).class]">
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate hover:text-indigo-600 dark:hover:text-indigo-400">{{ doc.titulo }}</span>
+                            <span :class="['px-1.5 py-0.5 rounded font-black text-[0.48rem] uppercase tracking-wider shrink-0', getVigenciaStatus(doc).class]">
                               {{ getVigenciaStatus(doc).label }}
                             </span>
                           </div>
-                          <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.6rem] text-slate-400 mt-0.5">
-                            <span class="font-bold text-slate-500">{{ doc.total_paginas }} págs</span>
+                          <div class="flex flex-wrap gap-x-2 gap-y-0.5 text-[0.56rem] text-slate-400 dark:text-slate-500 mt-0.5">
+                            <span class="font-bold text-slate-500 dark:text-slate-400">{{ doc.total_paginas }} págs</span>
                             <span v-if="doc.numero_acta">· Acta: {{ doc.numero_acta }}</span>
-                            <span v-if="doc.fecha_aprobacion">· Aprobado: {{ formatDate(doc.fecha_aprobacion) }}</span>
+                            <span v-if="doc.fecha_aprobacion">· Aprob: {{ formatDate(doc.fecha_aprobacion) }}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div class="flex items-center gap-4 shrink-0 justify-between md:justify-end">
-                        <div v-if="getLatestActiveUpdate(doc)" class="text-[0.6rem] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/10 px-2.5 py-1 rounded-lg flex items-center gap-1.5" @click.stop="openManual(doc)">
-                          <span class="font-bold text-indigo-650 dark:text-indigo-400">🔄 Última Acta: {{ getLatestActiveUpdate(doc)?.numero_acta }}</span>
+                      <div class="flex items-center gap-3 shrink-0 sm:justify-end">
+                        <div v-if="getLatestActiveUpdate(doc)" class="text-[0.56rem] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/10 px-2 py-1 rounded-lg flex items-center gap-1" @click.stop="openManual(doc)">
+                          <span class="font-bold text-indigo-600 dark:text-indigo-400">🔄 Acta: {{ getLatestActiveUpdate(doc)?.numero_acta }}</span>
                         </div>
-                        <span class="text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors">
+                        <span class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </span>
                       </div>
@@ -519,22 +606,20 @@ onMounted(() => {
   box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 20px;
-}
-:root.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+.select-dark {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
 }
 
-.bg-indigo-650 {
-  background-color: #4f46e5;
+.gaveta-accordion {
+  transition: box-shadow 0.2s;
+}
+.gaveta-accordion:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+:root.dark .gaveta-accordion:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 </style>
