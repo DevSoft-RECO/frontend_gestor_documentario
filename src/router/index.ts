@@ -126,6 +126,15 @@ const routes: RouteRecordRaw[] = [
                     title: 'Configuración de Normativas',
                     permission: 'admin_biblioteca'
                 }
+            },
+            {
+                path: 'manuales/reportes',
+                name: 'manuales-reportes',
+                component: () => import('@/views/Manuales/ReportesNormativasView.vue'),
+                meta: {
+                    title: 'Reportes de Normativas',
+                    permission: 'reportes_normativas'
+                }
             }
         ]
     },

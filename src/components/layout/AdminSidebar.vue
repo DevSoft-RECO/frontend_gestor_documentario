@@ -264,6 +264,16 @@ const menuItems = computed(() => {
             borderClass: 'border-fuchsia-500',
             show: authStore.hasPermission('admin_biblioteca')
         },
+        {
+            id: 'reportes-normativas',
+            label: 'Reportes Normativas',
+            route: '/admin/manuales/reportes',
+            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />',
+            colorClass: 'text-teal-400 dark:text-teal-400',
+            hoverColorClass: 'group-hover:text-teal-400',
+            borderClass: 'border-teal-500',
+            show: authStore.hasPermission('reportes_normativas') || authStore.hasRole('Super Admin')
+        },
     ]
 
     return items.filter(item => item.show)
