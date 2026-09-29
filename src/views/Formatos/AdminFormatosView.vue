@@ -23,7 +23,25 @@
           </p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Botón Exportar CSV -->
+          <button
+            v-if="activeTab === 'formatos'"
+            @click="exportarReporteCSV"
+            :disabled="isExporting"
+            class="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 font-bold text-xs shadow-sm hover:shadow transition-all transform hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+            title="Exportar inventario y configuración de permisos en formato CSV para Excel"
+          >
+            <svg v-if="isExporting" class="animate-spin h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg v-else class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>{{ isExporting ? 'Generando CSV...' : 'Exportar CSV' }}</span>
+          </button>
+
           <button
             v-if="activeTab === 'formatos'"
             @click="abrirModalNuevoFormato"
@@ -582,6 +600,7 @@ interface FormatoAdmin {
 const activeTab = ref<'formatos' | 'areas'>('formatos')
 const isLoadingFormatos = ref(false)
 const isSaving = ref(false)
+const isExporting = ref(false)
 
 const formatos = ref<FormatoAdmin[]>([])
 const areas = ref<Area[]>([])
@@ -936,6 +955,58 @@ const eliminarArea = async (area: Area) => {
     } catch (err: any) {
       Swal.fire('No permitido', err?.response?.data?.error || 'Error al eliminar área', 'error')
     }
+  }
+}
+
+// --- EXPORTAR REPORTE CSV ---
+const exportarReporteCSV = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
+
+  try {
+    const params: Record<string, string> = {}
+    if (filtroSearch.value.trim() !== '') {
+      params.search = filtroSearch.value.trim()
+    }
+    if (filtroAreaId.value !== '') {
+      params.area_id = filtroAreaId.value
+    }
+
+    const res = await api.get('/formatos/admin/exportar', {
+      params,
+      responseType: 'blob'
+    })
+
+    const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+
+    const fechaStr = new Date().toISOString().slice(0, 10)
+    link.setAttribute('download', `reporte_formatos_institucionales_${fechaStr}.csv`)
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Reporte generado',
+      text: 'El inventario de formatos institucionales se exportó exitosamente en CSV.',
+      timer: 2500,
+      showConfirmButton: false
+    })
+  } catch (err: any) {
+    console.error('Error al exportar reporte CSV:', err)
+    Swal.fire({
+      icon: 'error',
+      title: 'Error de exportación',
+      text: err?.response?.data?.error || 'No se pudo generar el reporte en CSV.',
+      confirmButtonColor: '#059669'
+    })
+  } finally {
+    isExporting.value = false
   }
 }
 
