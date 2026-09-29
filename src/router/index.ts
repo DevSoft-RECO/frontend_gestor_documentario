@@ -135,6 +135,23 @@ const routes: RouteRecordRaw[] = [
                     title: 'Reportes de Normativas',
                     permission: 'reportes_normativas'
                 }
+            },
+            {
+                path: 'formatos/biblioteca',
+                name: 'formatos-biblioteca',
+                component: () => import('@/views/Formatos/BibliotecaFormatosView.vue'),
+                meta: {
+                    title: 'Formatos Institucionales'
+                }
+            },
+            {
+                path: 'formatos/configuracion',
+                name: 'formatos-configuracion',
+                component: () => import('@/views/Formatos/AdminFormatosView.vue'),
+                meta: {
+                    title: 'Configuración de Formatos',
+                    permission: 'admin_formatos'
+                }
             }
         ]
     },

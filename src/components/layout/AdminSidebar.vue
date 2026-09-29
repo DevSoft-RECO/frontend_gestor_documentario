@@ -274,6 +274,26 @@ const menuItems = computed(() => {
             borderClass: 'border-teal-500',
             show: authStore.hasPermission('reportes_normativas') || authStore.hasRole('Super Admin')
         },
+        {
+            id: 'biblioteca-formatos',
+            label: 'Formatos Institucionales',
+            route: '/admin/formatos/biblioteca',
+            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />',
+            colorClass: 'text-emerald-400 dark:text-emerald-400',
+            hoverColorClass: 'group-hover:text-emerald-400',
+            borderClass: 'border-emerald-500',
+            show: true
+        },
+        {
+            id: 'config-formatos',
+            label: 'Configuración Formatos',
+            route: '/admin/formatos/configuracion',
+            iconSvg: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />',
+            colorClass: 'text-lime-400 dark:text-lime-400',
+            hoverColorClass: 'group-hover:text-lime-400',
+            borderClass: 'border-lime-500',
+            show: authStore.hasPermission('admin_formatos') || authStore.hasRole('Super Admin')
+        },
     ]
 
     return items.filter(item => item.show)
