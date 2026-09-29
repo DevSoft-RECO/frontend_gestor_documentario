@@ -36,41 +36,34 @@
     </div>
 
     <nav
-      class="flex-1 py-6 px-3 space-y-2 custom-scrollbar"
-      :class="layoutStore.isCollapsed ? 'overflow-visible' : 'overflow-y-auto'"
+      class="flex-1 min-h-0 py-3 px-2 space-y-1 overflow-y-auto overflow-x-hidden no-scrollbar"
     >
       <template v-for="item in menuItems" :key="item.id">
 
         <div class="relative group">
-             <RouterLink
+          <RouterLink
             :to="item.route"
+            :title="item.label"
             @click="handleItemClick"
-            class="flex items-center px-3 py-3 rounded-lg transition-all duration-200 group border-l-4"
+            @mouseenter="showTooltip(item.label, $event)"
+            @mouseleave="hideTooltip"
+            class="flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group border-l-4"
             :class="[
                 isActive(item.route)
                 ? 'bg-white/10 dark:bg-gray-800 text-white shadow-lg ' + item.borderClass
                 : 'border-transparent text-gray-300 dark:text-gray-400 hover:bg-white/5 dark:hover:bg-gray-800 hover:text-white dark:hover:text-gray-100',
                 layoutStore.isCollapsed ? 'justify-center pl-0 border-l-0' : ''
             ]"
-            >
-                <span class="shrink-0 transition-colors duration-200"
-                      :class="isActive(item.route) ? item.colorClass : ['text-gray-400 dark:text-gray-400', item.hoverColorClass]">
-                    <svg v-html="item.iconSvg" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
-                </span>
+          >
+            <span class="shrink-0 transition-colors duration-200"
+                  :class="isActive(item.route) ? item.colorClass : ['text-gray-400 dark:text-gray-400', item.hoverColorClass]">
+              <svg v-html="item.iconSvg" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
+            </span>
 
-                <span v-if="!layoutStore.isCollapsed" class="ml-3 font-medium text-sm truncate">
-                    {{ item.label }}
-                </span>
-            </RouterLink>
-
-            <div
-                v-if="layoutStore.isCollapsed"
-                class="absolute left-full top-0 ml-2 px-3 py-2 bg-verde-cope text-white text-sm font-bold rounded-md shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none"
-                style="width: max-content;"
-            >
-                {{ item.label }}
-                <div class="absolute top-3 -left-1 w-2 h-2 bg-verde-cope transform rotate-45"></div>
-            </div>
+            <span v-if="!layoutStore.isCollapsed" class="ml-3 font-medium text-sm truncate">
+              {{ item.label }}
+            </span>
+          </RouterLink>
         </div>
 
         <!--
@@ -153,10 +146,35 @@
         </div>
     </div>
   </aside>
+
+  <!-- TOOLTIP FLOTANTE FUERA DEL CONTENEDOR (NUNCA SE CORTA POR OVERFLOW) -->
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition-opacity duration-150"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="layoutStore.isCollapsed && hoveredTooltip"
+        class="fixed z-[9999] pointer-events-none px-3 py-1.5 bg-verde-cope text-white text-sm font-bold rounded-lg shadow-2xl whitespace-nowrap flex items-center"
+        :style="{
+          top: `${hoveredTooltip.top}px`,
+          left: '86px',
+          transform: 'translateY(-50%)'
+        }"
+      >
+        {{ hoveredTooltip.label }}
+        <div class="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-verde-cope transform rotate-45"></div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLayoutStore } from '@/stores/layout'
 import { useAuthStore } from '@/stores/auth'
@@ -165,8 +183,28 @@ const route = useRoute()
 const layoutStore = useLayoutStore()
 const authStore = useAuthStore()
 
-// --- NUEVA FUNCIÓN PARA CERRAR EN MÓVIL ---
+// --- TOOLTIP FLOTANTE EN MODO COLAPSADO (FUERA DE CONTENEDOR) ---
+const hoveredTooltip = ref<{ label: string; top: number } | null>(null)
+
+const showTooltip = (label: string, event: MouseEvent) => {
+  if (!layoutStore.isCollapsed) return
+  const target = event.currentTarget as HTMLElement
+  if (target) {
+    const rect = target.getBoundingClientRect()
+    hoveredTooltip.value = {
+      label,
+      top: rect.top + (rect.height / 2)
+    }
+  }
+}
+
+const hideTooltip = () => {
+  hoveredTooltip.value = null
+}
+
+// --- FUNCIÓN PARA CERRAR EN MÓVIL ---
 const handleItemClick = () => {
+  hideTooltip()
   if (window.innerWidth < 768) {
       layoutStore.closeSidebar()
   }
@@ -307,7 +345,16 @@ const isActive = (path: string) => route.path === path
 .fade-in { animation: fadeIn 0.4s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); border-radius: 20px; }
+/* Ocultar barra de scroll visualmente manteniendo la funcionalidad de desplazamiento */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE y Edge Legacy */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge Chromium, Opera */
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
 </style>

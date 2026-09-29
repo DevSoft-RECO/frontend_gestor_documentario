@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { ref, shallowRef, watch, nextTick } from 'vue'
+import { ref, shallowRef, watch, nextTick, onMounted } from 'vue'
+
+onMounted(() => {
+  if (props.show) {
+    renderPDF()
+  }
+})
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
@@ -123,11 +129,13 @@ const renderPDF = async () => {
       ? `${props.apiUrl}/api/manuales/documentos/${props.manual.id}/url`
       : `${props.apiUrl}/api/manuales/actualizaciones/${activeViewerMode.value}/url`
 
+    console.log('Fetching signed URL for PDF, endpoint:', urlEndpoint);
     const resUrl = await fetch(urlEndpoint, {
       headers: { 'Authorization': `Bearer ${token}` }
-    })
-    if (!resUrl.ok) throw new Error("No autorizado o vencido")
-    const dataUrl = await resUrl.json()
+    });
+    console.log('Signed URL response:', resUrl);
+    if (!resUrl.ok) throw new Error("No autorizado o vencido");
+    const dataUrl = await resUrl.json();
     
     // Descargar con barra de progreso
     const pdfData = await downloadPDFWithProgress(dataUrl.url)
