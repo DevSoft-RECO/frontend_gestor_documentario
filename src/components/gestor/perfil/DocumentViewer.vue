@@ -14,6 +14,7 @@ interface IndicePagina {
   tipo_movimiento: string
   etiqueta: string
   numero_documento: string | null
+  tipo_fecha?: string | null
   fecha_vencimiento: string | null
   fecha_operacion: string
   usuario_id: number
@@ -640,11 +641,19 @@ const formatDate = (dateStr: string | null) => {
   }
 }
 
+const getTipoFechaLabel = (tipo?: string | null) => {
+  if (tipo === 'fecha_emision') return 'Emisión'
+  if (tipo === 'fecha_documento') return 'Doc'
+  if (tipo === 'fecha_vencimiento') return 'Vence'
+  return 'Fecha'
+}
+
 // Edición de índices existentes
 const editingIndiceId = ref<number | null>(null)
 const editForm = ref({
   etiqueta: '',
   numero_documento: '',
+  tipo_fecha: '',
   fecha_vencimiento: ''
 })
 const isSavingIndice = ref(false)
@@ -655,6 +664,7 @@ const startEdit = (indice: IndicePagina, event: Event) => {
   editForm.value = {
     etiqueta: indice.etiqueta,
     numero_documento: indice.numero_documento || '',
+    tipo_fecha: indice.tipo_fecha || '',
     fecha_vencimiento: indice.fecha_vencimiento ? new Date(indice.fecha_vencimiento).toISOString().split('T')[0] : ''
   }
 }
@@ -683,6 +693,7 @@ const saveEdit = async (indiceId: number, event: Event) => {
       body: JSON.stringify({
         etiqueta: editForm.value.etiqueta,
         numero_documento: editForm.value.numero_documento,
+        tipo_fecha: editForm.value.fecha_vencimiento ? editForm.value.tipo_fecha : null,
         fecha_vencimiento: editForm.value.fecha_vencimiento
       })
     })
@@ -851,9 +862,20 @@ const saveEdit = async (indiceId: number, event: Event) => {
                     
                     <input type="text" v-model="editForm.numero_documento" placeholder="Número de Documento (opcional)" class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20" />
                     
-                    <div class="space-y-1">
-                      <label class="block text-[0.6rem] font-bold text-slate-400 uppercase">Fecha Vencimiento (opcional)</label>
-                      <input type="date" v-model="editForm.fecha_vencimiento" class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20" />
+                    <div class="grid grid-cols-2 gap-2">
+                      <div class="space-y-1">
+                        <label class="block text-[0.6rem] font-bold text-slate-400 uppercase">Tipo Fecha</label>
+                        <select v-model="editForm.tipo_fecha" class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20">
+                          <option value="">Elegir opción...</option>
+                          <option value="fecha_documento">Fecha Doc.</option>
+                          <option value="fecha_emision">Fecha Emisión</option>
+                          <option value="fecha_vencimiento">Fecha Venc.</option>
+                        </select>
+                      </div>
+                      <div class="space-y-1">
+                        <label class="block text-[0.6rem] font-bold text-slate-400 uppercase">Fecha (opcional)</label>
+                        <input type="date" v-model="editForm.fecha_vencimiento" class="w-full p-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-sky-500/20" />
+                      </div>
                     </div>
                   </div>
 
@@ -879,8 +901,8 @@ const saveEdit = async (indiceId: number, event: Event) => {
                       <span>{{ indice.tipo_movimiento }}</span>
                       <template v-if="indice.fecha_vencimiento">
                         <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-                        <span class="text-red-500 dark:text-red-400 font-semibold flex items-center gap-1">
-                          Vence: {{ formatDate(indice.fecha_vencimiento) }}
+                        <span :class="indice.tipo_fecha === 'fecha_vencimiento' ? 'text-red-500 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'" class="font-semibold flex items-center gap-1">
+                          {{ getTipoFechaLabel(indice.tipo_fecha) }}: {{ formatDate(indice.fecha_vencimiento) }}
                         </span>
                       </template>
                     </p>

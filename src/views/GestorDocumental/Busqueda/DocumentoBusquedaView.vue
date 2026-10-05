@@ -8,6 +8,7 @@ interface IndiceResultado {
   pagina_inicio: number
   etiqueta: string
   numero_documento: string
+  tipo_fecha?: string | null
   fecha_operacion: string
   fecha_vencimiento: string | null
   documento: {
@@ -158,6 +159,13 @@ const openDirectDocument = (doc: any, asociadoNombre: string) => {
   showViewer.value = true
 }
 
+const getFechaLabel = (item: IndiceResultado) => {
+  if (!item.fecha_vencimiento) return 'Fecha Operación'
+  if (item.tipo_fecha === 'fecha_emision') return 'Fecha Emisión'
+  if (item.tipo_fecha === 'fecha_documento') return 'Fecha Documento'
+  return 'Vencimiento'
+}
+
 const formatDate = (dateStr: string | null) => {
   if (!dateStr) return ''
   const datePart = dateStr.split('T')[0].split(' ')[0]
@@ -273,10 +281,10 @@ const formatDate = (dateStr: string | null) => {
                       </div>
                     </div>
                     <div class="info-item">
-                      <div class="info-icon" :class="{ 'warn': res.fecha_vencimiento }">📅</div>
+                      <div class="info-icon" :class="{ 'warn': res.fecha_vencimiento && (!res.tipo_fecha || res.tipo_fecha === 'fecha_vencimiento') }">📅</div>
                       <div class="info-text">
-                        <label>{{ res.fecha_vencimiento ? 'Vencimiento' : 'Fecha Operación' }}</label>
-                        <span :class="{ 'warning-text': res.fecha_vencimiento }">
+                        <label>{{ getFechaLabel(res) }}</label>
+                        <span :class="{ 'warning-text': res.fecha_vencimiento && (!res.tipo_fecha || res.tipo_fecha === 'fecha_vencimiento') }">
                           {{ formatDate(res.fecha_vencimiento || res.fecha_operacion) }}
                         </span>
                       </div>

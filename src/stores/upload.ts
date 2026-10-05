@@ -38,6 +38,7 @@ export const useUploadStore = defineStore('upload', () => {
     subcategoriaId: string
     etiqueta?: string
     numeroDocumento?: string
+    tipoFecha?: string
     fechaVencimiento?: string
   }) {
     const uploadId = Math.random().toString(36).substring(2, 9)
@@ -60,6 +61,9 @@ export const useUploadStore = defineStore('upload', () => {
     }
     if (payload.numeroDocumento) {
       formData.append('numero_documento', payload.numeroDocumento)
+    }
+    if (payload.tipoFecha) {
+      formData.append('tipo_fecha', payload.tipoFecha)
     }
     if (payload.fechaVencimiento) {
       formData.append('fecha_vencimiento', payload.fechaVencimiento)

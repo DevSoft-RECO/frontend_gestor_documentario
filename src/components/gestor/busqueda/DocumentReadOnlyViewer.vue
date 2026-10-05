@@ -14,6 +14,7 @@ interface IndicePagina {
   tipo_movimiento: string
   etiqueta: string
   numero_documento: string | null
+  tipo_fecha?: string | null
   fecha_vencimiento: string | null
   fecha_operacion: string
 }
@@ -40,6 +41,13 @@ const zoomLevel = ref(1.0)
 const isRendering = ref(false)
 const downloadProgress = ref(0) // Progreso de descarga 0-100
 const authStore = useAuthStore()
+
+const getTipoFechaLabel = (tipo?: string | null) => {
+  if (tipo === 'fecha_emision') return 'Emisión'
+  if (tipo === 'fecha_documento') return 'Doc'
+  if (tipo === 'fecha_vencimiento') return 'Vence'
+  return 'Fecha'
+}
 
 const formatDate = (dateStr: string | null) => {
   if (!dateStr) return ''
@@ -471,14 +479,14 @@ watch(zoomLevel, reRenderPages)
                   
                   <div class="flex items-center gap-2 shrink-0">
                     <span v-if="indice.numero_documento" class="text-[0.6rem] font-mono text-slate-400 dark:text-slate-500">#{{ indice.numero_documento }}</span>
-                    <span v-if="indice.fecha_vencimiento" class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" title="Tiene vencimiento"></span>
+                    <span v-if="indice.fecha_vencimiento && (!indice.tipo_fecha || indice.tipo_fecha === 'fecha_vencimiento')" class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" title="Tiene vencimiento"></span>
                   </div>
                 </div>
               </div>
               
-              <div v-if="indice.fecha_vencimiento" class="mt-2 pl-16 flex items-center gap-2 text-[0.6rem] text-amber-600 dark:text-amber-400 font-bold italic">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Vence el {{ formatDate(indice.fecha_vencimiento) }}
+              <div v-if="indice.fecha_vencimiento" class="mt-2 pl-16 flex items-center gap-2 text-[0.6rem] font-bold italic" :class="(!indice.tipo_fecha || indice.tipo_fecha === 'fecha_vencimiento') ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'">
+                <svg v-if="!indice.tipo_fecha || indice.tipo_fecha === 'fecha_vencimiento'" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                {{ getTipoFechaLabel(indice.tipo_fecha) }}: {{ formatDate(indice.fecha_vencimiento) }}
               </div>
             </div>
             

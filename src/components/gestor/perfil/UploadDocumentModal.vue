@@ -41,8 +41,22 @@ const uploadForm = ref({
   subcategoria_id: '',
   etiqueta: '',
   numero_documento: '',
+  tipo_fecha: '',
   fecha_vencimiento: '',
   file: null as File | null
+})
+
+const labelFecha = computed(() => {
+  switch (uploadForm.value.tipo_fecha) {
+    case 'fecha_emision':
+      return 'Fecha de Emisión'
+    case 'fecha_vencimiento':
+      return 'Fecha de Vencimiento'
+    case 'fecha_documento':
+      return 'Fecha del Documento'
+    default:
+      return 'Fecha (Opcional)'
+  }
 })
 
 const alreadyExists = computed(() => {
@@ -108,6 +122,7 @@ const uploadDocument = () => {
     subcategoriaId: uploadForm.value.subcategoria_id,
     etiqueta: uploadForm.value.etiqueta || undefined,
     numeroDocumento: uploadForm.value.numero_documento,
+    tipoFecha: uploadForm.value.tipo_fecha ? uploadForm.value.tipo_fecha : undefined,
     fechaVencimiento: uploadForm.value.fecha_vencimiento || undefined
   })
 
@@ -117,6 +132,7 @@ const uploadDocument = () => {
     subcategoria_id: '', 
     etiqueta: '', 
     numero_documento: '', 
+    tipo_fecha: '', 
     fecha_vencimiento: '', 
     file: null 
   }
@@ -192,16 +208,26 @@ const uploadDocument = () => {
             <h3 class="section-title">2. Detalles del Documento</h3>
             <div class="form-group">
               <label>Etiqueta del Primer Índice</label>
-              <input type="text" v-model="uploadForm.etiqueta" class="custom-select" placeholder="Ej. Documento Original" />
+              <input type="text" v-model="uploadForm.etiqueta" class="custom-select" :placeholder="alreadyExists ? 'Ej. Actualización de Documento' : 'Ej. Documento Inicial'" />
+            </div>
+
+            <div class="form-group">
+              <label>Número de documento<span style="color: #ef4444;">*</span></label>
+              <input type="text" v-model="uploadForm.numero_documento" class="custom-select" placeholder="Ej. A-123" required />
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Número de documento<span style="color: #ef4444;">*</span></label>
-                <input type="text" v-model="uploadForm.numero_documento" class="custom-select" placeholder="Ej. A-123" required />
+                <label>Tipo de Fecha</label>
+                <select v-model="uploadForm.tipo_fecha" class="custom-select">
+                  <option value="">Elegir opción...</option>
+                  <option value="fecha_documento">Fecha Documento</option>
+                  <option value="fecha_emision">Fecha Emisión</option>
+                  <option value="fecha_vencimiento">Fecha Vencimiento</option>
+                </select>
               </div>
               <div class="form-group">
-                <label>Fecha de vencimiento</label>
+                <label>{{ labelFecha }}</label>
                 <input type="date" v-model="uploadForm.fecha_vencimiento" class="custom-select" />
               </div>
             </div>
