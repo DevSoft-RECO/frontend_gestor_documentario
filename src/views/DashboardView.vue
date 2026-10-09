@@ -1,201 +1,51 @@
 <template>
-  <div class="p-6 md:p-8 space-y-8 font-['Plus_Jakarta_Sans']">
-    <!-- HEADER & KPI GRID COMBINED -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <!-- HEADER PART -->
-      <div class="p-6 border-b border-white/10 dark:border-slate-800 bg-azul-cope dark:bg-slate-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-400">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="9" y1="3" x2="9" y2="21"/>
-              <line x1="15" y1="3" x2="15" y2="21"/>
-              <line x1="3" y1="9" x2="21" y2="9"/>
-              <line x1="3" y1="15" x2="21" y2="15"/>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight">
-              Dashboard Analítico
-            </h1>
-            <p class="text-xs text-white/70 mt-1 flex flex-wrap items-center gap-2">
-              <span>Resumen ejecutivo del Gestor Documental HUM</span>
-              <span class="text-white/20 font-normal">|</span>
-              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-teal-300 border border-white/10">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                {{ fechaActual }}
-              </span>
-            </p>
-          </div>
-        </div>
-        <button @click="fetchStats" :disabled="loading"
-                class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-black transition-all shadow-none border border-white/25 cursor-pointer disabled:opacity-40 flex items-center gap-2">
-          <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          <span>Actualizar</span>
-        </button>
-      </div>
-
-      <!-- KPI GRID -->
-      <div v-if="stats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 bg-slate-50/20 dark:bg-slate-900/30">
-        <div v-for="(kpi, i) in kpis" :key="i"
-             class="kpi-grid-item hover:bg-slate-100/30 dark:hover:bg-slate-800/40 p-6 transition-all cursor-default flex flex-col justify-center min-h-[110px]">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-inner shrink-0" :class="kpi.iconBg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+  <div class="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 font-['Plus_Jakarta_Sans']">
+    
+    <!-- SECCIÓN 1: VISTA ANALÍTICA COMPLETA (Para usuarios con permiso ver-dashboard-hum-norm o Super Admin) -->
+    <div v-if="puedeVerMetricas" class="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+      <!-- HEADER & KPI GRID COMBINED -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <!-- HEADER PART -->
+        <div class="p-6 border-b border-white/10 dark:border-slate-800 bg-azul-cope dark:bg-slate-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-400">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <line x1="15" y1="3" x2="15" y2="21"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="3" y1="15" x2="21" y2="15"/>
+              </svg>
             </div>
-            <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ kpi.label }}</span>
-          </div>
-          <p class="text-2xl font-black tracking-tight mt-3" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- LOADING STATE -->
-    <div v-if="loading && !stats" class="flex flex-col items-center justify-center py-32 gap-4">
-      <div class="w-14 h-14 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin"></div>
-      <p class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Cargando analíticas...</p>
-    </div>
-
-    <template v-if="stats">
-      <!-- CHARTS ROW -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <!-- BAR CHART: Documentos por Mes -->
-        <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
-          <div class="flex items-center justify-between mb-6">
             <div>
-              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Documentos y Asociados por Mes</h3>
-              <p class="text-[0.65rem] text-slate-400 mt-0.5">Últimos 6 meses de actividad</p>
-            </div>
-            <span class="text-[0.6rem] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full">TENDENCIA</span>
-          </div>
-          <div class="h-[260px]">
-            <canvas ref="barChartCanvas"></canvas>
-          </div>
-        </div>
-
-        <!-- DONUT CHART: Distribución por Categoría -->
-        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
-          <div class="mb-6">
-            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Por Categoría</h3>
-            <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de documentos</p>
-          </div>
-          <div class="h-[220px] flex items-center justify-center">
-            <canvas ref="donutChartCanvas"></canvas>
-          </div>
-          <div class="mt-4 space-y-2">
-            <div v-for="(cat, i) in stats.documentos_por_categoria" :key="i" class="flex items-center justify-between text-xs">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full" :style="{ background: donutColors[i % donutColors.length] }"></span>
-                <span class="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[140px]">{{ cat.nombre }}</span>
-              </div>
-              <span class="font-black text-slate-900 dark:text-white">{{ cat.total }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- BOTTOM ROW -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <!-- ACTIVIDAD RECIENTE -->
-        <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-violet-600 dark:text-violet-400"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              </div>
-              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Actividad Reciente</h3>
-            </div>
-            <span class="text-[0.6rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">ÚLTIMAS 10</span>
-          </div>
-          <div class="divide-y divide-slate-100 dark:divide-slate-800">
-            <div v-for="(item, i) in stats.actividad_reciente" :key="i"
-                 class="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div class="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 text-xs font-black shrink-0">
-                {{ item.usuario_nombre?.charAt(0) || '?' }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.subcategoria }}</p>
-                <p class="text-[0.6rem] text-slate-400 mt-0.5">
-                  <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.etiqueta }}</span> · <span class="font-bold">{{ item.usuario_nombre }}</span> · {{ item.tipo_movimiento }} · {{ item.asociado_nombre }}
-                </p>
-              </div>
-              <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_operacion) }}</span>
-            </div>
-            <div v-if="!stats.actividad_reciente?.length" class="py-16 text-center text-slate-400">
-              <p class="text-xs font-bold">Sin actividad registrada</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ALERTAS DE VENCIMIENTO -->
-        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 dark:text-amber-400"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              </div>
-              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Por Vencer</h3>
-            </div>
-            <span v-if="stats.docs_por_vencer > 0" class="text-[0.6rem] font-black bg-amber-500 text-white px-2.5 py-1 rounded-full animate-pulse">
-              {{ stats.docs_por_vencer }}
-            </span>
-          </div>
-          <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[320px] overflow-y-auto custom-scrollbar">
-            <div v-for="(alerta, i) in stats.alertas_vencimiento" :key="i"
-                 class="px-5 py-3.5 hover:bg-amber-50/50 dark:hover:bg-amber-900/5 transition-colors">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ alerta.etiqueta }}</p>
-                  <p class="text-[0.6rem] text-slate-400 mt-0.5">{{ alerta.asociado_nombre }} · {{ alerta.subcategoria }}</p>
-                </div>
-                <span class="text-[0.6rem] font-black px-2 py-0.5 rounded-md shrink-0"
-                      :class="getDaysUntil(alerta.fecha_vencimiento) <= 7
-                        ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                        : 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'">
-                  {{ getDaysUntil(alerta.fecha_vencimiento) }} días
+              <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight">
+                Dashboard Analítico
+              </h1>
+              <p class="text-xs text-white/70 mt-1 flex flex-wrap items-center gap-2">
+                <span>Resumen ejecutivo del Gestor Documental HUM</span>
+                <span class="text-white/20 font-normal">|</span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-teal-300 border border-white/10">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  {{ fechaActual }}
                 </span>
-              </div>
-              <p v-if="alerta.numero_documento" class="text-[0.6rem] font-mono text-slate-400 mt-1">#{{ alerta.numero_documento }}</p>
-            </div>
-            <div v-if="!stats.alertas_vencimiento?.length" class="py-16 text-center">
-              <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-500"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              </div>
-              <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Todo al día</p>
-              <p class="text-[0.6rem] text-slate-400 mt-1">No hay documentos próximos a vencer</p>
+              </p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- MANUALS HEADER & KPI GRID COMBINED -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-8">
-        <!-- MANUALS HEADER PART -->
-        <div class="p-6 border-b border-white/10 dark:border-slate-800 bg-azul-cope dark:bg-slate-950 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-400">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-          </div>
-          <div>
-            <h2 class="text-lg md:text-xl font-black text-white tracking-tight">
-              Biblioteca de Normativas & Documentación
-            </h2>
-            <p class="text-xs text-white/70 mt-0.5">
-              Analíticas de volumen y distribución de Normativas en la plataforma
-            </p>
-          </div>
+          <button @click="fetchStats" :disabled="loading"
+                  class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-black transition-all shadow-none border border-white/25 cursor-pointer disabled:opacity-40 flex items-center gap-2">
+            <svg v-if="loading" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <span>Actualizar</span>
+          </button>
         </div>
 
-        <!-- MANUALS KPI GRID -->
-        <div class="grid grid-cols-2 md:grid-cols-4 bg-slate-50/20 dark:bg-slate-900/30">
-          <div v-for="(kpi, i) in manualKpis" :key="i"
-               class="manual-grid-item hover:bg-slate-100/30 dark:hover:bg-slate-800/40 p-6 transition-all cursor-default flex flex-col justify-center min-h-[110px]">
+        <!-- KPI GRID -->
+        <div v-if="stats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 bg-slate-50/20 dark:bg-slate-900/30">
+          <div v-for="(kpi, i) in kpis" :key="i"
+               class="kpi-grid-item hover:bg-slate-100/30 dark:hover:bg-slate-800/40 p-6 transition-all cursor-default flex flex-col justify-center min-h-[110px]">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-inner shrink-0" :class="kpi.iconBg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
               </div>
               <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ kpi.label }}</span>
             </div>
@@ -204,78 +54,373 @@
         </div>
       </div>
 
-      <!-- MANUALS BOTTOM SECTION: Category Distribution & Recent Manuals -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <!-- Manuals Category Distribution List / Bar Breakdown (Left 2 cols) -->
-        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
-          <div class="mb-6">
-            <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Normativas por Categoría</h3>
-            <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de biblioteca de normativas</p>
+      <!-- LOADING STATE -->
+      <div v-if="loading && !stats" class="flex flex-col items-center justify-center py-32 gap-4">
+        <div class="w-14 h-14 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin"></div>
+        <p class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Cargando analíticas...</p>
+      </div>
+
+      <template v-if="stats">
+        <!-- CHARTS ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <!-- BAR CHART: Documentos por Mes -->
+          <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Documentos y Asociados por Mes</h3>
+                <p class="text-[0.65rem] text-slate-400 mt-0.5">Últimos 6 meses de actividad</p>
+              </div>
+              <span class="text-[0.6rem] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full">TENDENCIA</span>
+            </div>
+            <div class="h-[260px]">
+              <canvas ref="barChartCanvas"></canvas>
+            </div>
           </div>
-          <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-            <div v-for="(cat, i) in stats.manuales_por_categoria" :key="i" class="space-y-2">
-              <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                <span class="truncate max-w-[170px]">{{ cat.nombre }}</span>
+
+          <!-- DONUT CHART: Distribución por Categoría -->
+          <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+            <div class="mb-6">
+              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Por Categoría</h3>
+              <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de documentos</p>
+            </div>
+            <div class="h-[220px] flex items-center justify-center">
+              <canvas ref="donutChartCanvas"></canvas>
+            </div>
+            <div class="mt-4 space-y-2">
+              <div v-for="(cat, i) in stats.documentos_por_categoria" :key="i" class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full" :style="{ background: donutColors[i % donutColors.length] }"></span>
+                  <span class="font-bold text-slate-700 dark:text-slate-300 truncate max-w-[140px]">{{ cat.nombre }}</span>
+                </div>
                 <span class="font-black text-slate-900 dark:text-white">{{ cat.total }}</span>
               </div>
-              <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-500"
-                     :style="{
-                       width: `${(cat.total / (stats.total_manuales || 1)) * 100}%`,
-                       backgroundColor: donutColors[i % donutColors.length]
-                     }">
-                </div>
-              </div>
-            </div>
-            <div v-if="!stats.manuales_por_categoria?.length" class="py-16 text-center text-slate-400">
-              <p class="text-xs font-bold">Sin categorías registradas</p>
             </div>
           </div>
         </div>
 
-        <!-- Recent Manuals Uploads List (Right 3 cols) -->
-        <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-600 dark:text-emerald-400">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
+        <!-- BOTTOM ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <!-- ACTIVIDAD RECIENTE -->
+          <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-violet-600 dark:text-violet-400"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Actividad Reciente</h3>
               </div>
-              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Normativas Recientes</h3>
+              <span class="text-[0.6rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">ÚLTIMAS 10</span>
             </div>
-            <span class="text-[0.6rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">ÚLTIMOS 5</span>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+              <div v-for="(item, i) in stats.actividad_reciente" :key="i"
+                   class="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div class="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 text-xs font-black shrink-0">
+                  {{ item.usuario_nombre?.charAt(0) || '?' }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.subcategoria }}</p>
+                  <p class="text-[0.6rem] text-slate-400 mt-0.5">
+                    <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.etiqueta }}</span> · <span class="font-bold">{{ item.usuario_nombre }}</span> · {{ item.tipo_movimiento }} · {{ item.asociado_nombre }}
+                  </p>
+                </div>
+                <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_operacion) }}</span>
+              </div>
+              <div v-if="!stats.actividad_reciente?.length" class="py-16 text-center text-slate-400">
+                <p class="text-xs font-bold">Sin actividad registrada</p>
+              </div>
+            </div>
           </div>
-          <div class="divide-y divide-slate-100 dark:divide-slate-800">
-            <div v-for="(item, i) in stats.manuales_recientes" :key="i"
-                 class="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs font-black shrink-0">
-                M
+
+          <!-- ALERTAS DE VENCIMIENTO -->
+          <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 dark:text-amber-400"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Por Vencer</h3>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.titulo }}</p>
-                <p class="text-[0.6rem] text-slate-400 mt-0.5">
-                  Subido por <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.usuario_nombre }}</span> · Subcategoría: <span class="font-semibold text-indigo-600 dark:text-teal-400">{{ item.subcategoria }}</span>
-                </p>
-              </div>
-              <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_creacion) }}</span>
+              <span v-if="stats.docs_por_vencer > 0" class="text-[0.6rem] font-black bg-amber-500 text-white px-2.5 py-1 rounded-full animate-pulse">
+                {{ stats.docs_por_vencer }}
+              </span>
             </div>
-            <div v-if="!stats.manuales_recientes?.length" class="py-16 text-center text-slate-400">
-              <p class="text-xs font-bold">Sin normativas cargados</p>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[320px] overflow-y-auto custom-scrollbar">
+              <div v-for="(alerta, i) in stats.alertas_vencimiento" :key="i"
+                   class="px-5 py-3.5 hover:bg-amber-50/50 dark:hover:bg-amber-900/5 transition-colors">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ alerta.etiqueta }}</p>
+                    <p class="text-[0.6rem] text-slate-400 mt-0.5">{{ alerta.asociado_nombre }} · {{ alerta.subcategoria }}</p>
+                  </div>
+                  <span class="text-[0.6rem] font-black px-2 py-0.5 rounded-md shrink-0"
+                        :class="getDaysUntil(alerta.fecha_vencimiento) <= 7
+                          ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                          : 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'">
+                    {{ getDaysUntil(alerta.fecha_vencimiento) }} días
+                  </span>
+                </div>
+                <p v-if="alerta.numero_documento" class="text-[0.6rem] font-mono text-slate-400 mt-1">#{{ alerta.numero_documento }}</p>
+              </div>
+              <div v-if="!stats.alertas_vencimiento?.length" class="py-16 text-center">
+                <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-500"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Todo al día</p>
+                <p class="text-[0.6rem] text-slate-400 mt-1">No hay documentos próximos a vencer</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUALS HEADER & KPI GRID COMBINED -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-8">
+          <!-- MANUALS HEADER PART -->
+          <div class="p-6 border-b border-white/10 dark:border-slate-800 bg-azul-cope dark:bg-slate-950 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-teal-400">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg md:text-xl font-black text-white tracking-tight">
+                Biblioteca de Normativas & Documentación
+              </h2>
+              <p class="text-xs text-white/70 mt-0.5">
+                Analíticas de volumen y distribución de Normativas en la plataforma
+              </p>
+            </div>
+          </div>
+
+          <!-- MANUALS KPI GRID -->
+          <div class="grid grid-cols-2 md:grid-cols-4 bg-slate-50/20 dark:bg-slate-900/30">
+            <div v-for="(kpi, i) in manualKpis" :key="i"
+                 class="manual-grid-item hover:bg-slate-100/30 dark:hover:bg-slate-800/40 p-6 transition-all cursor-default flex flex-col justify-center min-h-[110px]">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shadow-inner shrink-0" :class="kpi.iconBg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="kpi.icon" :class="kpi.iconColor"></svg>
+                </div>
+                <span class="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ kpi.label }}</span>
+              </div>
+              <p class="text-2xl font-black tracking-tight mt-3" :class="kpi.valueColor">{{ kpi.value.toLocaleString() }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUALS BOTTOM SECTION: Category Distribution & Recent Manuals -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <!-- Manuals Category Distribution List / Bar Breakdown (Left 2 cols) -->
+          <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+            <div class="mb-6">
+              <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Normativas por Categoría</h3>
+              <p class="text-[0.65rem] text-slate-400 mt-0.5">Distribución de biblioteca de normativas</p>
+            </div>
+            <div class="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+              <div v-for="(cat, i) in stats.manuales_por_categoria" :key="i" class="space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <span class="truncate max-w-[170px]">{{ cat.nombre }}</span>
+                  <span class="font-black text-slate-900 dark:text-white">{{ cat.total }}</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500"
+                       :style="{
+                         width: `${(cat.total / (stats.total_manuales || 1)) * 100}%`,
+                         backgroundColor: donutColors[i % donutColors.length]
+                       }">
+                  </div>
+                </div>
+              </div>
+              <div v-if="!stats.manuales_por_categoria?.length" class="py-16 text-center text-slate-400">
+                <p class="text-xs font-bold">Sin categorías registradas</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Manuals Uploads List (Right 3 cols) -->
+          <div class="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-emerald-600 dark:text-emerald-400">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-800 dark:text-slate-100">Normativas Recientes</h3>
+              </div>
+              <span class="text-[0.6rem] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full">ÚLTIMOS 5</span>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+              <div v-for="(item, i) in stats.manuales_recientes" :key="i"
+                   class="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs font-black shrink-0">
+                  M
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{{ item.titulo }}</p>
+                  <p class="text-[0.6rem] text-slate-400 mt-0.5">
+                    Subido por <span class="font-bold text-slate-600 dark:text-slate-300">{{ item.usuario_nombre }}</span> · Subcategoría: <span class="font-semibold text-indigo-600 dark:text-teal-400">{{ item.subcategoria }}</span>
+                  </p>
+                </div>
+                <span class="text-[0.6rem] font-mono text-slate-400 shrink-0">{{ formatDate(item.fecha_creacion) }}</span>
+              </div>
+              <div v-if="!stats.manuales_recientes?.length" class="py-16 text-center text-slate-400">
+                <p class="text-xs font-bold">Sin normativas cargados</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- SECCIÓN 2: VISTA DE BIENVENIDA (Para usuarios sin permiso de visualización de métricas) -->
+    <div v-else class="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+      
+      <!-- HERO BIENVENIDA -->
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 text-white p-6 sm:p-10 shadow-xl">
+        <!-- Glows decorativos de fondo -->
+        <div class="absolute top-0 right-0 -mt-8 -mr-8 w-72 h-72 rounded-full bg-teal-500/10 blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 -mb-8 -ml-8 w-72 h-72 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-3xl space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-xs font-bold uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+            Yaman Kutx · Ecosistema Digital
+          </div>
+
+          <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight font-['Outfit'] leading-tight">
+            Bienvenido al Sistema Gestor de Documentos HUM y Normativas Institucionales
+          </h1>
+
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+            Hola <span class="font-bold text-white">{{ authStore.user?.name || authStore.user?.username || 'Colaborador' }}</span>, este es tu portal centralizado para la consulta de expedientes de asociados, documentación normativa oficial y catálogo de formatos de la cooperativa.
+          </p>
+
+          <!-- Tarjetas de contexto de usuario -->
+          <div class="flex flex-wrap gap-2.5 pt-2">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-slate-200">
+              <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              <span>{{ authStore.user?.username || 'Usuario' }}</span>
+            </div>
+            <div v-if="authStore.user?.agencia" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-slate-200">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              <span>Agencia: {{ authStore.user?.agencia }}</span>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-teal-300">
+              <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span>Sesión Autenticada</span>
             </div>
           </div>
         </div>
       </div>
-    </template>
+
+      <!-- MÓDULOS DEL SISTEMA -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        
+        <!-- CARD: GESTOR DOCUMENTAL HUM -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-emerald-500/40 transition-all group">
+          <div class="space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>
+            </div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white font-['Outfit']">
+              Gestor Documental HUM
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Búsqueda y consulta ágil de expedientes de asociados, verificación de requisitos y archivo digital seguro.
+            </p>
+          </div>
+          <div class="pt-5 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider">Módulo Expedientes</span>
+            <router-link 
+              v-if="authStore.hasPermission('buscar_asociados')"
+              to="/admin/gestor/buscador" 
+              class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+            >
+              Ir a Buscador →
+            </router-link>
+            <span v-else class="text-[0.65rem] font-semibold text-slate-400 italic">Consulta autorizada</span>
+          </div>
+        </div>
+
+        <!-- CARD: BIBLIOTECA DE NORMATIVAS -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-sky-500/40 transition-all group">
+          <div class="space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+            </div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white font-['Outfit']">
+              Biblioteca de Normativas
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Consulta de políticas, reglamentos, manuales de procedimientos e instructivos institucionales vigentes.
+            </p>
+          </div>
+          <div class="pt-5 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider">Documentación</span>
+            <router-link 
+              to="/admin/manuales/biblioteca" 
+              class="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors"
+            >
+              Ver Biblioteca →
+            </router-link>
+          </div>
+        </div>
+
+        <!-- CARD: FORMATOS INSTITUCIONALES -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-violet-500/40 transition-all group">
+          <div class="space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+            </div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white font-['Outfit']">
+              Formatos Institucionales
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Catálogo oficial de formatos y plantillas descargables para procesos operativos y administrativos.
+            </p>
+          </div>
+          <div class="pt-5 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider">Formatos</span>
+            <router-link 
+              to="/admin/formatos/biblioteca" 
+              class="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+            >
+              Ver Formatos →
+            </router-link>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- NOTA INFORMATIVA INFERIOR -->
+      <div class="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 flex items-start gap-3 text-xs text-slate-500 dark:text-slate-400">
+        <svg class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p>
+          <span class="font-bold text-slate-700 dark:text-slate-300">Nota de Acceso:</span> Las métricas analíticas y estadísticas globales del dashboard están restringidas a roles administrativos y de reportería especializada. Si requieres acceso a las métricas del sistema, solicita la habilitación del permiso correspondiente al Administrador.
+        </p>
+      </div>
+
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, DoughnutController, Filler } from 'chart.js'
+import { useAuthStore } from '@/stores/auth'
 
 Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, DoughnutController, Filler)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const authStore = useAuthStore()
+
+const puedeVerMetricas = computed(() => {
+  return authStore.hasRole('Super Admin') || 
+         authStore.hasPermission('ver-dashboard-hum-norm') || 
+         authStore.hasPermission('ver_dashboard_hum_norm')
+})
 
 interface Stats {
   total_asociados: number
@@ -638,7 +783,9 @@ const getDaysUntil = (dateStr: string) => {
 }
 
 onMounted(() => {
-  fetchStats()
+  if (puedeVerMetricas.value) {
+    fetchStats()
+  }
 })
 </script>
 
