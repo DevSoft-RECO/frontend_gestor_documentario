@@ -123,6 +123,7 @@ const renderPDF = async () => {
   
   try {
     const token = sessionStorage.getItem('access_token')
+    const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : ''
     
     // Obtener la URL firmada del backend (Alternando entre el manual principal y las hojas de actualización)
     const urlEndpoint = activeViewerMode.value === 'original'
@@ -131,10 +132,13 @@ const renderPDF = async () => {
 
     console.log('Fetching signed URL for PDF, endpoint:', urlEndpoint);
     const resUrl = await fetch(urlEndpoint, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { 'Authorization': authHeader }
     });
     console.log('Signed URL response:', resUrl);
-    if (!resUrl.ok) throw new Error("No autorizado o vencido");
+    if (!resUrl.ok) {
+      const errBody = await resUrl.json().catch(() => ({}))
+      throw new Error(errBody.error || "No autorizado o vencido")
+    }
     const dataUrl = await resUrl.json();
     
     // Descargar con barra de progreso
